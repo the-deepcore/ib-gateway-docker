@@ -1,0 +1,5 @@
+# Force shell scripts and config templates to use LF (Unix) line endings
+*.sh text eol=lf
+*.tmpl text eol=lf
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
