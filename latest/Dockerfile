@@ -81,6 +81,7 @@ ENV IBC_INI=${HOME}/ibc/config.ini
 ENV IBC_INI_TMPL=${IBC_INI}.tmpl
 ENV SCRIPT_PATH=${HOME}/scripts
 ENV GATEWAY_OR_TWS=gateway
+ENV TRADING_MODE=paper
 ARG DEBIAN_FRONTEND=noninteractive
 # Copy files
 COPY --from=setup /usr/local/ /usr/local/
