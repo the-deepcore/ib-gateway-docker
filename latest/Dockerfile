@@ -6,9 +6,9 @@
 ##############################################################################
 
 # hadolint global ignore=DL3008,DL4006
-FROM ubuntu:24.04 AS setup
+FROM --platform=linux/amd64 ubuntu:24.04 AS setup
 
-ENV IB_GATEWAY_VERSION=10.45.1b
+ENV IB_GATEWAY_VERSION=10.44.1g
 ENV IB_GATEWAY_CHANNEL=latest
 ENV IBC_VERSION=3.23.0
 ARG DEBIAN_FRONTEND=noninteractive
@@ -21,6 +21,16 @@ ARG IBC_URL="${IBC_REPO}/releases/download/${IBC_VERSION}/${IBC_FILE}"
 ARG ZULU_NAME=zulu17.60.17-ca-fx-jre17.0.16-linux_aarch64
 ARG ZULU_FILE=${ZULU_NAME}.tar.gz
 ARG ZULU_URL=https://cdn.azul.com/zulu/bin/${ZULU_FILE}
+
+ENV TWS_USERID="deepcorefreeacc"
+ENV TWS_PASSWORD="Pyrenees4321!"
+ENV TRADING_MODE="paper"
+ENV READ_ONLY_API="no"
+ENV VNC_SERVER_PASSWORD="myVncPassword"
+ENV TWOFA_TIMEOUT_ACTION="restart"
+ENV AUTO_RESTART_TIME="11:59 PM"
+ENV RELOGIN_AFTER_2FA_TIMEOUT="yes"
+ENV TIME_ZONE="Europe/Lisbon"
 
 WORKDIR /tmp/setup
 
@@ -64,9 +74,19 @@ COPY ./scripts /root/scripts
 # Build Stage: build production image
 ##############################################################################
 
-FROM ubuntu:24.04
+FROM --platform=linux/amd64 ubuntu:24.04
 
-ENV IB_GATEWAY_VERSION=10.45.1b
+ENV TWS_USERID="deepcorefreeacc"
+ENV TWS_PASSWORD="Pyrenees4321!"
+ENV TRADING_MODE="paper"
+ENV READ_ONLY_API="no"
+ENV VNC_SERVER_PASSWORD="myVncPassword"
+ENV TWOFA_TIMEOUT_ACTION="restart"
+ENV AUTO_RESTART_TIME="11:59 PM"
+ENV RELOGIN_AFTER_2FA_TIMEOUT="yes"
+ENV TIME_ZONE="Europe/Lisbon"
+
+ENV IB_GATEWAY_VERSION=10.44.1g
 # IB Gateway user constants
 ARG USER_ID="${USER_ID:-1000}"
 ARG USER_GID="${USER_GID:-1000}"
