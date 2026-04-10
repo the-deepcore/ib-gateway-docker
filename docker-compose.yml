@@ -8,16 +8,16 @@ services:
         - "ghcr.io/gnzsnz/ib-gateway:latest"
     image: ghcr.io/gnzsnz/ib-gateway:latest
     environment:
-      TWS_USERID: ${TWS_USERID}
-      TWS_PASSWORD: ${TWS_PASSWORD}
-      TRADING_MODE: ${TRADING_MODE:-paper}
+      TWS_USERID: "deepcorefreeacc2"
+      TWS_PASSWORD: "Pyrenees54321!"
+      TRADING_MODE: "paper"
       TWS_USERID_PAPER: ${TWS_USERID_PAPER:-}
       TWS_PASSWORD_PAPER: ${TWS_PASSWORD_PAPER:-}
       TWS_SETTINGS_PATH: ${TWS_SETTINGS_PATH:-}
       TWS_ACCEPT_INCOMING: ${TWS_ACCEPT_INCOMING:-manual}
       TWS_MASTER_CLIENT_ID: ${TWS_MASTER_CLIENT_ID:-}
-      READ_ONLY_API: ${READ_ONLY_API:-}
-      VNC_SERVER_PASSWORD: ${VNC_SERVER_PASSWORD:-}
+      READ_ONLY_API: "no"
+      VNC_SERVER_PASSWORD: "myVncPassword"
       TWOFA_TIMEOUT_ACTION: ${TWOFA_TIMEOUT_ACTION:-exit}
       BYPASS_WARNING: ${BYPASS_WARNING:-}
       AUTO_RESTART_TIME: ${AUTO_RESTART_TIME:-}
