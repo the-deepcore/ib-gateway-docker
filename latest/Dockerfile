@@ -6,7 +6,7 @@
 ##############################################################################
 
 # hadolint global ignore=DL3008,DL4006
-FROM --platform=linux/amd64 ubuntu:24.04 AS setup
+FROM ubuntu:24.04 AS setup
 
 ENV IB_GATEWAY_VERSION=10.44.1g
 ENV IB_GATEWAY_CHANNEL=latest
@@ -74,7 +74,7 @@ COPY ./scripts /root/scripts
 # Build Stage: build production image
 ##############################################################################
 
-FROM --platform=linux/amd64 ubuntu:24.04
+FROM ubuntu:24.04
 
 ENV TWS_USERID="deepcorefreeacc"
 ENV TWS_PASSWORD="Pyrenees4321!"
@@ -88,8 +88,8 @@ ENV TIME_ZONE="Europe/Lisbon"
 
 ENV IB_GATEWAY_VERSION=10.44.1g
 # IB Gateway user constants
-ARG USER_ID="${USER_ID:-1000}"
-ARG USER_GID="${USER_GID:-1000}"
+ARG USER_ID="1000"
+ARG USER_GID="1000"
 # IBC env vars
 ENV HOME=/home/ibgateway
 ENV TWS_MAJOR_VRSN=${IB_GATEWAY_VERSION}
@@ -133,4 +133,3 @@ LABEL org.opencontainers.image.source=https://github.com/gnzsnz/ib-gateway-docke
 LABEL org.opencontainers.image.url=https://github.com/gnzsnz/ib-gateway-docker/pkgs/container/ib-gateway
 LABEL org.opencontainers.image.description="Docker image with IB Gateway and IBC "
 LABEL org.opencontainers.image.licenses="Apache License Version 2.0"
-LABEL org.opencontainers.image.version=${IB_GATEWAY_VERSION}-${IB_GATEWAY_RELEASE_CHANNEL}
