@@ -22,16 +22,6 @@ ARG ZULU_NAME=zulu17.60.17-ca-fx-jre17.0.16-linux_aarch64
 ARG ZULU_FILE=${ZULU_NAME}.tar.gz
 ARG ZULU_URL=https://cdn.azul.com/zulu/bin/${ZULU_FILE}
 
-ENV TWS_USERID="deepcorefreeacc2"
-ENV TWS_PASSWORD="Pyrenees54321!"
-ENV TRADING_MODE="paper"
-ENV READ_ONLY_API="no"
-ENV VNC_SERVER_PASSWORD="myVncPassword"
-ENV TWOFA_TIMEOUT_ACTION="restart"
-ENV AUTO_RESTART_TIME="11:59 PM"
-ENV RELOGIN_AFTER_2FA_TIMEOUT="yes"
-ENV TIME_ZONE="Europe/Lisbon"
-
 WORKDIR /tmp/setup
 
 # Prepare system
@@ -75,16 +65,6 @@ COPY ./scripts /root/scripts
 ##############################################################################
 
 FROM ubuntu:24.04
-
-ENV TWS_USERID="deepcorefreeacc"
-ENV TWS_PASSWORD="Pyrenees4321!"
-ENV TRADING_MODE="paper"
-ENV READ_ONLY_API="no"
-ENV VNC_SERVER_PASSWORD="myVncPassword"
-ENV TWOFA_TIMEOUT_ACTION="restart"
-ENV AUTO_RESTART_TIME="11:59 PM"
-ENV RELOGIN_AFTER_2FA_TIMEOUT="yes"
-ENV TIME_ZONE="Europe/Lisbon"
 
 ENV IB_GATEWAY_VERSION=10.44.1g
 # IB Gateway user constants
