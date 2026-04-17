@@ -55,6 +55,8 @@ def cropped_view(profile):
     fig.show()
 
     file_name = 'cropped_calibration.html'
+    file_path = '/tmp/' + file_name
+
     fig.write_html(
         file_name,
         full_html=True,
@@ -62,7 +64,7 @@ def cropped_view(profile):
         auto_open=True,
     )
 
-    upload_file(file_name, file_name)
+    upload_file(file_path, file_name)
     url = generate_presigned_url(file_name)
     print(url)
 

@@ -5,6 +5,7 @@ Centralises all S3 interactions: calibration JSON files,
 HTML report uploads, and presigned URL generation.
 """
 
+import os
 import json
 from typing import Any, Dict
 
@@ -14,9 +15,9 @@ from botocore.exceptions import ClientError
 BUCKET = "thedeepcore"
 CALIBRATION_PREFIX = "calibrations/"
 
-AWS_ACCESS_KEY_ID = "AWS_ACCESS_KEY_ID"
-AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY/JTUEu"
-AWS_REGION = "eu-west-3"
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
 
 _client = None
 

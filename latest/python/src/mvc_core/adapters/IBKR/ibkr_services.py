@@ -1,5 +1,4 @@
 from ib_insync import IB, ContFuture, util
-from ibapi import VERSION
 
 import pandas as pd
 import datetime

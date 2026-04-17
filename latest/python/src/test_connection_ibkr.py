@@ -1,4 +1,6 @@
 from ib_insync import IB, util
+
+import os
 import pandas as pd
 import datetime
 
