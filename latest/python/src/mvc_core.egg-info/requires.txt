@@ -1,0 +1,10 @@
+pandas
+numpy
+plotly
+pydantic>=2.0
+typer
+
+[dev]
+pytest
+ruff
+mypy

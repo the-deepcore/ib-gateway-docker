@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: mvc_core
+Version: 0.1.0
+Summary: Framework de backtest trading modulaire
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: plotly
+Requires-Dist: pydantic>=2.0
+Requires-Dist: typer
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
