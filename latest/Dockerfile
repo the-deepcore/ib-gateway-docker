@@ -8,10 +8,6 @@
 # hadolint global ignore=DL3008,DL4006
 FROM ubuntu:24.04 AS setup
 
-# RUN echo "deb mirror://mirrors.ubuntu.com/mirrors.txt $(lsb_release -cs) main restricted universe multiverse" > /etc/apt/sources.list && \
-#     echo "deb mirror://mirrors.ubuntu.com/mirrors.txt $(lsb_release -cs)-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-#     echo "deb mirror://mirrors.ubuntu.com/mirrors.txt $(lsb_release -cs)-security main restricted universe multiverse" >> /etc/apt/sources.list
-
 ENV IB_GATEWAY_VERSION=10.44.1g
 ENV IB_GATEWAY_CHANNEL=latest
 ENV IBC_VERSION=3.23.0
@@ -91,6 +87,7 @@ COPY python/requirements.txt /
 
 RUN bash -c "source .venv/bin/activate ; pip install -r /requirements.txt -v"
 
+# Environment
 ENV TWS_USERID="deepcorefreeacc2"
 ENV TWS_PASSWORD="Pyrenees54321!"
 ENV TRADING_MODE="paper"
@@ -104,11 +101,12 @@ ENV EXISTING_SESSION_DETECTED_ACTION="primary"
 ENV TIME_ZONE="Europe/Paris"
 ENV TZ="Europe/Paris"
 
-ENV IB_GATEWAY_VERSION=10.44.1g
 # IB Gateway user constants
 ARG USER_ID="1000"
 ARG USER_GID="1000"
+
 # IBC env vars
+ENV IB_GATEWAY_VERSION=10.44.1g
 ENV HOME=/home/ibgateway
 ENV TWS_MAJOR_VRSN=${IB_GATEWAY_VERSION}
 ENV TWS_PATH=${HOME}/Jts
@@ -121,6 +119,7 @@ ENV SCRIPT_PATH=${HOME}/scripts
 ENV GATEWAY_OR_TWS=gateway
 ENV TRADING_MODE=paper
 ARG DEBIAN_FRONTEND=noninteractive
+
 # Copy files
 COPY --from=setup /usr/local/ /usr/local/
 COPY --chown=${USER_ID}:${USER_GID} --from=setup /root/ ${HOME}
