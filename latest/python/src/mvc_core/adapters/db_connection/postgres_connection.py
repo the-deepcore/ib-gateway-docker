@@ -15,39 +15,19 @@ import psycopg2
 class PostgresConfig:
     """
     Configuration for connecting to PostgreSQL.
-    
-    Attributes:
-        host: Server address 
-        port: PostgreSQL port 
-        database: Database name
-        username: Username for authentication
-        password: Password for authentication
     """
-    host: str = "localhost"
+    host: str = ""
     port: int = 5432
-    database: str = "thedeepcore_dev"
-    username: str = "postgres"
+    database: str = ""
+    username: str = ""
     password: str = ""
-    
+
     @classmethod
     def from_env(cls) -> PostgresConfig:
         """
         Create a config from environment variables.
-        
-        Environment variables used:
-            - POSTGRES_HOST (or PGHOST)
-            - POSTGRES_PORT (or PGPORT)
-            - POSTGRES_DATABASE (or PGDATABASE)
-            - POSTGRES_USERNAME (or PGUSER)
-            - POSTGRES_PASSWORD (or PGPASSWORD)
         """
-        return cls(
-            host=os.getenv("POSTGRES_HOST", os.getenv("PGHOST", "localhost")),
-            port=int(os.getenv("POSTGRES_PORT", os.getenv("PGPORT", "5432"))),
-            database=os.getenv("POSTGRES_DATABASE", os.getenv("PGDATABASE", "trading_db")),
-            username=os.getenv("POSTGRES_USERNAME", os.getenv("PGUSER", "postgres")),
-            password=os.getenv("POSTGRES_PASSWORD", os.getenv("PGPASSWORD", "")),
-        )
+        return cls(host=host,port=port,database=database,username=username,password=password)
 
 
 # ============================================================================

@@ -12,12 +12,10 @@ from typing import Any, Dict
 import boto3
 from botocore.exceptions import ClientError
 
+from dotenv import dotenv_values
+
 BUCKET = "thedeepcore"
 CALIBRATION_PREFIX = "calibrations/"
-
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION")
 
 _client = None
 
@@ -25,10 +23,11 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
+        config = dotenv_values("/tmp/secrets/.env")
         session = boto3.Session(
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            region_name=AWS_REGION,
+            aws_access_key_id=config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=config['AWS_SECRET_ACCESS_KEY'],
+            region_name=config['AWS_REGION'],
         )
         _client = session.client("s3")
     return _client

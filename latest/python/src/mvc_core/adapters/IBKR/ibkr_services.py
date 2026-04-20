@@ -4,8 +4,8 @@ import pandas as pd
 import datetime
 
 from mvc_core.adapters.db_connection.postgres_connection import get_postgres
-from mvc_core.adapters.IBKR import config as ibkr_config
 
+from dotenv import dotenv_values
 
 IBKR_TO_DB_NAME = {
     "KC": "arabica",
@@ -73,8 +73,10 @@ def fetch_and_upsert():
     Connect to IBKR, fetch the last 2 days of daily bars for each asset,
     and upsert T-1 (refresh yesterday) + T (today) into the database.
     """
+    config = dotenv_values("/tmp/secrets/.env")
+
     ib = IB()
-    ib.connect(ibkr_config.HOST, ibkr_config.PORT, clientId=1)
+    ib.connect(config['IBGATEWAY_HOST'],config['IBGATEWAY_PORT'],clientId=1)
 
     date_today = datetime.datetime.now().date()
     date_yesterday = date_today - datetime.timedelta(days=1)
