@@ -70,10 +70,12 @@ RUN apt-get update -yq
 RUN apt-get install -yq apt-transport-https
 RUN apt-get clean
 
+# Python
 RUN apt-get install -yq python3
 RUN apt-get install -yq python3-pip
 RUN apt-get install -yq python3-venv
 RUN apt-get install -yq libpq-dev gcc unixodbc unixodbc-dev
+RUN apt-get install -yq screen
 
 ENV APP_HOME=/app
 
@@ -83,9 +85,8 @@ COPY ./python $APP_HOME
 
 RUN python3 -m venv .venv
 
-COPY python/requirements.txt /
-
-RUN bash -c "source .venv/bin/activate ; pip install -r /requirements.txt -v"
+RUN . .venv/bin/activate && \
+    pip install -r requirements.txt -v
 
 # Environment
 ENV TWS_USERID="deepcorefreeacc2"

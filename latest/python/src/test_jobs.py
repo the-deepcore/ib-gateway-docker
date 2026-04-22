@@ -10,11 +10,10 @@ from mvc_core.engine.run.vectorized_backtest import run_fusion_backtest
 from mvc_core.plotting.figures import plot_price_equity
 
 from mvc_core.adapters.db_connection.postgres_connection import PostgresConfig, init_postgres
-from mvc_core.adapters.db_connection import config
 from mvc_core.adapters.IBKR.ibkr_services import fetch_and_upsert
 from mvc_core.adapters.s3_AWS.s3_services import upload_file, generate_presigned_url, bulk_upload_calibrations
 
-
+from dotenv import dotenv_values
 
 
 def update(profile):
@@ -58,7 +57,7 @@ def cropped_view(profile):
     file_path = '/tmp/' + file_name
 
     fig.write_html(
-        file_name,
+        file_path,
         full_html=True,
         include_plotlyjs=True,
         auto_open=True,
@@ -125,22 +124,16 @@ def test_fusion_strat_signals():
 
 
 def init_db():
-
-    pg_config = PostgresConfig(
-        host=config.PGHOST,
-        port=config.PGPORT,
-        database=config.PGDATABASE,
-        username=config.PGUSER,
-        password=config.PGPASSWORD,
-    )
-    init_postgres(pg_config)
+    config = dotenv_values("/tmp/secrets/.env")
+    pgconfig = PostgresConfig(host=config['POSTGRES_HOST'],port=int(config['POSTGRES_PORT']),database=config['POSTGRES_DATABASE'],username=config['POSTGRES_USERNAME'],password=config['POSTGRES_PASSWORD'])
+    init_postgres(pgconfig)
 
 
 def main():
 
     # Upload on s3 all .json files from save_wf_simu/calib_temp
-    # import glob
-    # bulk_upload_calibrations(glob.glob("save_wf_simu/calib_temp/*.json"))
+    import glob
+    bulk_upload_calibrations(glob.glob("save_wf_simu/calib_temp/*.json"))
 
     init_db()
     fetch_and_upsert()

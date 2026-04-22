@@ -11,28 +11,20 @@ from mvc_core.adapters.IBKR.ibkr_services import (
     IBKR_TO_DB_NAME,
 )
 from mvc_core.adapters.db_connection.postgres_connection import PostgresConfig, init_postgres
-from mvc_core.adapters.db_connection import config
 
+from dotenv import dotenv_values
 
 def init_db():
-    pg_config = PostgresConfig(
-        host=config.PGHOST,
-        port=config.PGPORT,
-        database=config.PGDATABASE,
-        username=config.PGUSER,
-        password=config.PGPASSWORD,
-    )
-    init_postgres(pg_config)
-
-from mvc_core.adapters.IBKR import config as ibkr_config
+    config = dotenv_values("/tmp/secrets/.env")
+    pgconfig = PostgresConfig(host=config['POSTGRES_HOST'],port=int(config['POSTGRES_PORT']),database=config['POSTGRES_DATABASE'],username=config['POSTGRES_USERNAME'],password=config['POSTGRES_PASSWORD'])
+    init_postgres(pgconfig)
 
 def get_30m_sb_data():
-    # ib = IB()
-    # ib.connect("127.0.0.1", 4002, clientId=1)
-    ib = IB()
-    ib.connect(ibkr_config.HOST, ibkr_config.PORT, clientId=1)
+    config = dotenv_values("/tmp/secrets/.env")
 
-    # n_year_ago = (datetime.datetime.now() - datetime.timedelta(days=365)).strftime("%Y%m%d-%H:%M:%S")
+    ib = IB()
+    ib.connect(config['IBGATEWAY_HOST'],config['IBGATEWAY_PORT'],clientId=1)
+
     contract = get_cont_contract("SB")
     bars_prev = ib.reqHistoricalData(
         contract,
