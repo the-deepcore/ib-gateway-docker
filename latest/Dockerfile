@@ -81,12 +81,14 @@ ENV APP_HOME=/app
 
 WORKDIR /app
 
-COPY ./python $APP_HOME
+COPY ./python .
 
 RUN python3 -m venv .venv
 
 RUN \. .venv/bin/activate && \
     pip install -r requirements.txt -v
+
+COPY ./scripts/service.sh /etc/init.d/ib-gateway
 
 # Environment
 ENV TWS_USERID="deepcorefreeacc2"
@@ -140,6 +142,9 @@ RUN apt-get update -y && \
   echo "ibgateway ALL=(ALL) NOPASSWD:ALL" | tee -a /etc/sudoers && \
   chmod a+x ${SCRIPT_PATH}/*.sh && \
   mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
+
+RUN touch $APP_HOME/main.log
+RUN chown ibgateway: $APP_HOME/main.log
 
 USER ${USER_ID}:${USER_GID}
 WORKDIR ${HOME}
