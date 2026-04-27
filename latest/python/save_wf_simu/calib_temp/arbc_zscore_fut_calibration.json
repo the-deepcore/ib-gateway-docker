@@ -1,0 +1,742 @@
+{
+  "1": {
+    "train_start": "2013-05-01T00:00:00+00:00",
+    "train_end": "2013-12-26T00:00:00+00:00",
+    "test_start": "2013-12-27T00:00:00+00:00",
+    "test_end": "2014-02-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "2": {
+    "train_start": "2013-07-01T00:00:00+00:00",
+    "train_end": "2014-02-26T00:00:00+00:00",
+    "test_start": "2014-02-27T00:00:00+00:00",
+    "test_end": "2014-04-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "3": {
+    "train_start": "2013-08-28T00:00:00+00:00",
+    "train_end": "2014-04-28T00:00:00+00:00",
+    "test_start": "2014-04-29T00:00:00+00:00",
+    "test_end": "2014-06-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 0.5
+    }
+  },
+  "4": {
+    "train_start": "2013-10-28T00:00:00+00:00",
+    "train_end": "2014-06-26T00:00:00+00:00",
+    "test_start": "2014-06-27T00:00:00+00:00",
+    "test_end": "2014-08-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "5": {
+    "train_start": "2013-12-27T00:00:00+00:00",
+    "train_end": "2014-08-26T00:00:00+00:00",
+    "test_start": "2014-08-27T00:00:00+00:00",
+    "test_end": "2014-10-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "6": {
+    "train_start": "2014-02-27T00:00:00+00:00",
+    "train_end": "2014-10-24T00:00:00+00:00",
+    "test_start": "2014-10-27T00:00:00+00:00",
+    "test_end": "2014-12-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "7": {
+    "train_start": "2014-04-29T00:00:00+00:00",
+    "train_end": "2014-12-23T00:00:00+00:00",
+    "test_start": "2014-12-24T00:00:00+00:00",
+    "test_end": "2015-02-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.5
+    }
+  },
+  "8": {
+    "train_start": "2014-06-27T00:00:00+00:00",
+    "train_end": "2015-02-25T00:00:00+00:00",
+    "test_start": "2015-02-26T00:00:00+00:00",
+    "test_end": "2015-04-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "9": {
+    "train_start": "2014-08-27T00:00:00+00:00",
+    "train_end": "2015-04-27T00:00:00+00:00",
+    "test_start": "2015-04-28T00:00:00+00:00",
+    "test_end": "2015-06-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "10": {
+    "train_start": "2014-10-27T00:00:00+00:00",
+    "train_end": "2015-06-25T00:00:00+00:00",
+    "test_start": "2015-06-26T00:00:00+00:00",
+    "test_end": "2015-08-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.5
+    }
+  },
+  "11": {
+    "train_start": "2014-12-24T00:00:00+00:00",
+    "train_end": "2015-08-25T00:00:00+00:00",
+    "test_start": "2015-08-26T00:00:00+00:00",
+    "test_end": "2015-10-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "12": {
+    "train_start": "2015-02-26T00:00:00+00:00",
+    "train_end": "2015-10-23T00:00:00+00:00",
+    "test_start": "2015-10-26T00:00:00+00:00",
+    "test_end": "2015-12-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "13": {
+    "train_start": "2015-04-28T00:00:00+00:00",
+    "train_end": "2015-12-23T00:00:00+00:00",
+    "test_start": "2015-12-24T00:00:00+00:00",
+    "test_end": "2016-02-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.5
+    }
+  },
+  "14": {
+    "train_start": "2015-06-26T00:00:00+00:00",
+    "train_end": "2016-02-25T00:00:00+00:00",
+    "test_start": "2016-02-26T00:00:00+00:00",
+    "test_end": "2016-04-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "15": {
+    "train_start": "2015-08-26T00:00:00+00:00",
+    "train_end": "2016-04-26T00:00:00+00:00",
+    "test_start": "2016-04-27T00:00:00+00:00",
+    "test_end": "2016-06-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.5
+    }
+  },
+  "16": {
+    "train_start": "2015-10-26T00:00:00+00:00",
+    "train_end": "2016-06-24T00:00:00+00:00",
+    "test_start": "2016-06-27T00:00:00+00:00",
+    "test_end": "2016-08-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 2.0
+    }
+  },
+  "17": {
+    "train_start": "2015-12-24T00:00:00+00:00",
+    "train_end": "2016-08-24T00:00:00+00:00",
+    "test_start": "2016-08-25T00:00:00+00:00",
+    "test_end": "2016-10-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.0
+    }
+  },
+  "18": {
+    "train_start": "2016-02-26T00:00:00+00:00",
+    "train_end": "2016-10-24T00:00:00+00:00",
+    "test_start": "2016-10-25T00:00:00+00:00",
+    "test_end": "2016-12-22T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "19": {
+    "train_start": "2016-04-27T00:00:00+00:00",
+    "train_end": "2016-12-22T00:00:00+00:00",
+    "test_start": "2016-12-23T00:00:00+00:00",
+    "test_end": "2017-02-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "20": {
+    "train_start": "2016-06-27T00:00:00+00:00",
+    "train_end": "2017-02-24T00:00:00+00:00",
+    "test_start": "2017-02-27T00:00:00+00:00",
+    "test_end": "2017-04-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "21": {
+    "train_start": "2016-08-25T00:00:00+00:00",
+    "train_end": "2017-04-26T00:00:00+00:00",
+    "test_start": "2017-04-27T00:00:00+00:00",
+    "test_end": "2017-06-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "22": {
+    "train_start": "2016-10-25T00:00:00+00:00",
+    "train_end": "2017-06-26T00:00:00+00:00",
+    "test_start": "2017-06-27T00:00:00+00:00",
+    "test_end": "2017-08-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "23": {
+    "train_start": "2016-12-23T00:00:00+00:00",
+    "train_end": "2017-08-24T00:00:00+00:00",
+    "test_start": "2017-08-25T00:00:00+00:00",
+    "test_end": "2017-10-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "24": {
+    "train_start": "2017-02-27T00:00:00+00:00",
+    "train_end": "2017-10-24T00:00:00+00:00",
+    "test_start": "2017-10-25T00:00:00+00:00",
+    "test_end": "2017-12-22T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "25": {
+    "train_start": "2017-04-27T00:00:00+00:00",
+    "train_end": "2017-12-22T00:00:00+00:00",
+    "test_start": "2017-12-26T00:00:00+00:00",
+    "test_end": "2018-02-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "26": {
+    "train_start": "2017-06-27T00:00:00+00:00",
+    "train_end": "2018-02-26T00:00:00+00:00",
+    "test_start": "2018-02-27T00:00:00+00:00",
+    "test_end": "2018-04-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 0.5
+    }
+  },
+  "27": {
+    "train_start": "2017-08-25T00:00:00+00:00",
+    "train_end": "2018-04-26T00:00:00+00:00",
+    "test_start": "2018-04-27T00:00:00+00:00",
+    "test_end": "2018-06-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "28": {
+    "train_start": "2017-10-25T00:00:00+00:00",
+    "train_end": "2018-06-26T00:00:00+00:00",
+    "test_start": "2018-06-27T00:00:00+00:00",
+    "test_end": "2018-08-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "29": {
+    "train_start": "2017-12-26T00:00:00+00:00",
+    "train_end": "2018-08-24T00:00:00+00:00",
+    "test_start": "2018-08-27T00:00:00+00:00",
+    "test_end": "2018-10-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "30": {
+    "train_start": "2018-02-27T00:00:00+00:00",
+    "train_end": "2018-10-24T00:00:00+00:00",
+    "test_start": "2018-10-25T00:00:00+00:00",
+    "test_end": "2018-12-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 0.5
+    }
+  },
+  "31": {
+    "train_start": "2018-04-27T00:00:00+00:00",
+    "train_end": "2018-12-24T00:00:00+00:00",
+    "test_start": "2018-12-26T00:00:00+00:00",
+    "test_end": "2019-02-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 0.5
+    }
+  },
+  "32": {
+    "train_start": "2018-06-27T00:00:00+00:00",
+    "train_end": "2019-02-26T00:00:00+00:00",
+    "test_start": "2019-02-27T00:00:00+00:00",
+    "test_end": "2019-04-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "33": {
+    "train_start": "2018-08-27T00:00:00+00:00",
+    "train_end": "2019-04-26T00:00:00+00:00",
+    "test_start": "2019-04-29T00:00:00+00:00",
+    "test_end": "2019-06-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "34": {
+    "train_start": "2018-10-25T00:00:00+00:00",
+    "train_end": "2019-06-26T00:00:00+00:00",
+    "test_start": "2019-06-27T00:00:00+00:00",
+    "test_end": "2019-08-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.5
+    }
+  },
+  "35": {
+    "train_start": "2018-12-26T00:00:00+00:00",
+    "train_end": "2019-08-26T00:00:00+00:00",
+    "test_start": "2019-08-27T00:00:00+00:00",
+    "test_end": "2019-10-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "36": {
+    "train_start": "2019-02-27T00:00:00+00:00",
+    "train_end": "2019-10-24T00:00:00+00:00",
+    "test_start": "2019-10-25T00:00:00+00:00",
+    "test_end": "2019-12-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "37": {
+    "train_start": "2019-04-29T00:00:00+00:00",
+    "train_end": "2019-12-24T00:00:00+00:00",
+    "test_start": "2019-12-26T00:00:00+00:00",
+    "test_end": "2020-02-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "38": {
+    "train_start": "2019-06-27T00:00:00+00:00",
+    "train_end": "2020-02-26T00:00:00+00:00",
+    "test_start": "2020-02-27T00:00:00+00:00",
+    "test_end": "2020-04-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 0.5
+    }
+  },
+  "39": {
+    "train_start": "2019-08-27T00:00:00+00:00",
+    "train_end": "2020-04-27T00:00:00+00:00",
+    "test_start": "2020-04-28T00:00:00+00:00",
+    "test_end": "2020-06-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "40": {
+    "train_start": "2019-10-25T00:00:00+00:00",
+    "train_end": "2020-06-25T00:00:00+00:00",
+    "test_start": "2020-06-26T00:00:00+00:00",
+    "test_end": "2020-08-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "41": {
+    "train_start": "2019-12-26T00:00:00+00:00",
+    "train_end": "2020-08-25T00:00:00+00:00",
+    "test_start": "2020-08-26T00:00:00+00:00",
+    "test_end": "2020-10-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "42": {
+    "train_start": "2020-02-27T00:00:00+00:00",
+    "train_end": "2020-10-23T00:00:00+00:00",
+    "test_start": "2020-10-26T00:00:00+00:00",
+    "test_end": "2020-12-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "43": {
+    "train_start": "2020-04-28T00:00:00+00:00",
+    "train_end": "2020-12-23T00:00:00+00:00",
+    "test_start": "2020-12-24T00:00:00+00:00",
+    "test_end": "2021-02-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "44": {
+    "train_start": "2020-06-26T00:00:00+00:00",
+    "train_end": "2021-02-25T00:00:00+00:00",
+    "test_start": "2021-02-26T00:00:00+00:00",
+    "test_end": "2021-04-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.5
+    }
+  },
+  "45": {
+    "train_start": "2020-08-26T00:00:00+00:00",
+    "train_end": "2021-04-27T00:00:00+00:00",
+    "test_start": "2021-04-28T00:00:00+00:00",
+    "test_end": "2021-06-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "46": {
+    "train_start": "2020-10-26T00:00:00+00:00",
+    "train_end": "2021-06-25T00:00:00+00:00",
+    "test_start": "2021-06-28T00:00:00+00:00",
+    "test_end": "2021-08-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.0
+    }
+  },
+  "47": {
+    "train_start": "2020-12-24T00:00:00+00:00",
+    "train_end": "2021-08-25T00:00:00+00:00",
+    "test_start": "2021-08-26T00:00:00+00:00",
+    "test_end": "2021-10-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.0
+    }
+  },
+  "48": {
+    "train_start": "2021-02-26T00:00:00+00:00",
+    "train_end": "2021-10-25T00:00:00+00:00",
+    "test_start": "2021-10-26T00:00:00+00:00",
+    "test_end": "2021-12-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "49": {
+    "train_start": "2021-04-28T00:00:00+00:00",
+    "train_end": "2021-12-23T00:00:00+00:00",
+    "test_start": "2021-12-27T00:00:00+00:00",
+    "test_end": "2022-02-24T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "50": {
+    "train_start": "2021-06-28T00:00:00+00:00",
+    "train_end": "2022-02-24T00:00:00+00:00",
+    "test_start": "2022-02-25T00:00:00+00:00",
+    "test_end": "2022-04-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "51": {
+    "train_start": "2021-08-26T00:00:00+00:00",
+    "train_end": "2022-04-26T00:00:00+00:00",
+    "test_start": "2022-04-27T00:00:00+00:00",
+    "test_end": "2022-06-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "52": {
+    "train_start": "2021-10-26T00:00:00+00:00",
+    "train_end": "2022-06-27T00:00:00+00:00",
+    "test_start": "2022-06-28T00:00:00+00:00",
+    "test_end": "2022-08-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 2.5
+    }
+  },
+  "53": {
+    "train_start": "2021-12-27T00:00:00+00:00",
+    "train_end": "2022-08-25T00:00:00+00:00",
+    "test_start": "2022-08-26T00:00:00+00:00",
+    "test_end": "2022-10-25T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "54": {
+    "train_start": "2022-02-25T00:00:00+00:00",
+    "train_end": "2022-10-25T00:00:00+00:00",
+    "test_start": "2022-10-26T00:00:00+00:00",
+    "test_end": "2022-12-23T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 2.5
+    }
+  },
+  "55": {
+    "train_start": "2022-04-27T00:00:00+00:00",
+    "train_end": "2022-12-23T00:00:00+00:00",
+    "test_start": "2022-12-27T00:00:00+00:00",
+    "test_end": "2023-02-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.5
+    }
+  },
+  "56": {
+    "train_start": "2022-06-28T00:00:00+00:00",
+    "train_end": "2023-02-27T00:00:00+00:00",
+    "test_start": "2023-02-28T00:00:00+00:00",
+    "test_end": "2023-04-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "57": {
+    "train_start": "2022-08-26T00:00:00+00:00",
+    "train_end": "2023-04-27T00:00:00+00:00",
+    "test_start": "2023-04-28T00:00:00+00:00",
+    "test_end": "2023-06-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "58": {
+    "train_start": "2022-10-26T00:00:00+00:00",
+    "train_end": "2023-06-28T00:00:00+00:00",
+    "test_start": "2023-06-29T00:00:00+00:00",
+    "test_end": "2023-08-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "59": {
+    "train_start": "2022-12-27T00:00:00+00:00",
+    "train_end": "2023-08-28T00:00:00+00:00",
+    "test_start": "2023-08-29T00:00:00+00:00",
+    "test_end": "2023-10-26T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "60": {
+    "train_start": "2023-02-28T00:00:00+00:00",
+    "train_end": "2023-10-26T00:00:00+00:00",
+    "test_start": "2023-10-27T00:00:00+00:00",
+    "test_end": "2023-12-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.0,
+      "normalizer.high": 2.5
+    }
+  },
+  "61": {
+    "train_start": "2023-04-28T00:00:00+00:00",
+    "train_end": "2023-12-27T00:00:00+00:00",
+    "test_start": "2023-12-28T00:00:00+00:00",
+    "test_end": "2024-02-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.0
+    }
+  },
+  "62": {
+    "train_start": "2023-06-29T00:00:00+00:00",
+    "train_end": "2024-02-28T00:00:00+00:00",
+    "test_start": "2024-02-29T00:00:00+00:00",
+    "test_end": "2024-04-29T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "63": {
+    "train_start": "2023-08-29T00:00:00+00:00",
+    "train_end": "2024-04-29T00:00:00+00:00",
+    "test_start": "2024-04-30T00:00:00+00:00",
+    "test_end": "2024-06-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 2.5
+    }
+  },
+  "64": {
+    "train_start": "2023-10-27T00:00:00+00:00",
+    "train_end": "2024-06-28T00:00:00+00:00",
+    "test_start": "2024-07-01T00:00:00+00:00",
+    "test_end": "2024-08-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "65": {
+    "train_start": "2023-12-28T00:00:00+00:00",
+    "train_end": "2024-08-28T00:00:00+00:00",
+    "test_start": "2024-08-29T00:00:00+00:00",
+    "test_end": "2024-10-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 1.5
+    }
+  },
+  "66": {
+    "train_start": "2024-02-29T00:00:00+00:00",
+    "train_end": "2024-10-28T00:00:00+00:00",
+    "test_start": "2024-10-29T00:00:00+00:00",
+    "test_end": "2024-12-27T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.5,
+      "normalizer.high": 2.5
+    }
+  },
+  "67": {
+    "train_start": "2024-04-30T00:00:00+00:00",
+    "train_end": "2024-12-27T00:00:00+00:00",
+    "test_start": "2024-12-30T00:00:00+00:00",
+    "test_end": "2025-02-28T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "68": {
+    "train_start": "2024-07-01T00:00:00+00:00",
+    "train_end": "2025-02-28T00:00:00+00:00",
+    "test_start": "2025-03-03T00:00:00+00:00",
+    "test_end": "2025-04-30T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "69": {
+    "train_start": "2024-08-29T00:00:00+00:00",
+    "train_end": "2025-04-30T00:00:00+00:00",
+    "test_start": "2025-05-01T00:00:00+00:00",
+    "test_end": "2025-07-01T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "70": {
+    "train_start": "2024-10-29T00:00:00+00:00",
+    "train_end": "2025-07-01T00:00:00+00:00",
+    "test_start": "2025-07-02T00:00:00+00:00",
+    "test_end": "2025-08-29T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.0
+    }
+  },
+  "71": {
+    "train_start": "2024-12-30T00:00:00+00:00",
+    "train_end": "2025-08-29T00:00:00+00:00",
+    "test_start": "2025-09-02T00:00:00+00:00",
+    "test_end": "2025-10-29T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -1.0,
+      "normalizer.high": 1.5
+    }
+  },
+  "72": {
+    "train_start": "2025-03-03T00:00:00+00:00",
+    "train_end": "2025-10-29T00:00:00+00:00",
+    "test_start": "2025-10-30T00:00:00+00:00",
+    "test_end": "2025-12-30T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 0.5
+    }
+  },
+  "73": {
+    "train_start": "2025-05-01T00:00:00+00:00",
+    "train_end": "2025-12-30T00:00:00+00:00",
+    "test_start": "2025-12-31T00:00:00+00:00",
+    "test_end": "2026-03-03T00:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -2.5,
+      "normalizer.high": 1.0
+    }
+  },
+  "74": {
+    "train_start": "2025-07-02T00:00:00+00:00",
+    "train_end": "2026-03-03T00:00:00+00:00",
+    "test_start": "2026-03-04T00:00:00+00:00",
+    "test_end": "2026-04-27T16:00:00+00:00",
+    "best_params": {
+      "normalizer.low": -0.5,
+      "normalizer.high": 2.5
+    }
+  }
+}
