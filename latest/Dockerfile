@@ -143,6 +143,7 @@ RUN apt-get update -y && \
   chmod a+x ${SCRIPT_PATH}/*.sh && \
   mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
+# Create log file
 RUN touch $APP_HOME/main.log
 RUN chown ibgateway: $APP_HOME/main.log
 

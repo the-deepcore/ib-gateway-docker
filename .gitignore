@@ -6,3 +6,4 @@ ssh/
 /*_password.txt
 /pass/*
 /init-scripts/*
+.DS_Store
