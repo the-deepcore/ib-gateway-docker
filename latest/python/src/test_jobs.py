@@ -19,11 +19,6 @@ from dotenv import dotenv_values
 def update(profile):
     job_cfg = JobConfig(profile_name=profile)
     res = run_wf_update_job(job_cfg)
-
-    print(f"WF loaded from: {res['wf_json_path']}")
-    print(f"Nb splits: {len(res['wf_run'].splits)}")
-
-
     fig = build_wf_oos_figure_from_oos(
         oos=res["oos"],
         instrument=res["instrument"],
@@ -33,17 +28,9 @@ def update(profile):
     fig.show()
 
 
-
 def cropped_view(profile):
-
     job_cfg = JobConfig(profile_name=profile)
     res = get_backtest_view(job_cfg)
-    # fig = build_wf_oos_figure_price_only(
-    #     oos=res["oos"],
-    #     instrument=res["instrument"],
-    #     title_suffix="cropped calibration",
-    #     start_date = f"2023-01-01"
-    # )
     fig = build_wf_oos_figure_from_oos(
         oos=res["oos"],
         instrument=res["instrument"],
@@ -53,7 +40,7 @@ def cropped_view(profile):
 
     fig.show()
 
-    file_name = 'cropped_calibration.html'
+    file_name = profile + '.html'
     file_path = '/tmp/' + file_name
 
     fig.write_html(
@@ -68,10 +55,8 @@ def cropped_view(profile):
     print(url)
 
 
-
 def test_fusion_strat_signals():
-               
-    profiles = ["wf_sb11", "wf_rsi_sb11", "sb11_rsi_fut_shifted"] # thresh = 2
+    profiles = ["wf_sb11", "wf_rsi_sb11", "sb11_rsi_fut_shifted"]
     thresh = 1
     instrument = "SB11"
 
@@ -95,7 +80,7 @@ def test_fusion_strat_signals():
     fig.show()
 
     trades_df = build_trades_dataframe(fusion["trade_decisions"], initial_inv=30_000_000.0, include_open_positions=True)
-    
+
     print("\n=== FUSION TRADES SUMMARY ===")
     print_trades_summary(trades_df, start_date="2024-01-01", end_date="2024-12-31")
     print_trades_summary(trades_df, start_date="2025-01-01", end_date="2025-12-31")
@@ -109,8 +94,6 @@ def test_fusion_strat_signals():
         start_date="2023-01-01",
         debug=False,
     )
-
-
     fig_cropped = plot_price_equity(
         price=fusion_cropped["price_aligned"],
         equity=fusion_cropped["equity_df"],
@@ -130,36 +113,26 @@ def init_db():
 
 
 def main():
-
-    # Upload on s3 all .json files from save_wf_simu/calib_temp
     import glob
     bulk_upload_calibrations(glob.glob("save_wf_simu/calib_temp/*.json"))
 
     init_db()
     fetch_and_upsert()
 
-    profile = "wf_sb11"
+    profile = "wf_sb11"  # zscore-spot
     cropped_view(profile)
 
-    # profile = "wf_rsi_sb11"
-    # cropped_view(profile)
-    
-    # profile = "sb11_zscore_fut_shifted" # OBSOLETE (we don't follow this profile anymore) 
-    # cropped_view(profile)
+    profile = "wf_rsi_sb11" # rsi-spot
+    cropped_view(profile)
 
-    # profile = "sb11_rsi_fut_shifted"
-    # cropped_view(profile)
+    profile = "sb11_rsi_fut_shifted" # rsi-futures
+    cropped_view(profile)
 
-    # profile = "arabica_zscore_fut_shifted_wf"
-    # cropped_view(profile)
+    profile = "arabica_zscore_fut_shifted_wf" # zscore
+    cropped_view(profile)
 
-    # profile = "robusta_zscore_fut_shifted_wf" 
-    # cropped_view(profile)
-
-    # test_fusion_strat_signals()
-
-
-
+    profile = "robusta_zscore_fut_shifted_wf" # zscore
+    cropped_view(profile)
 
 
 
