@@ -2,89 +2,65 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
-from mvc_app.helpers.data_loader.data_loader_data import DataSource
 import pandas as pd
 
+from mvc_app.helpers.data_builder.data_sb11 import data_sb11_builder
+from mvc_app.helpers.data_loader.data_loader_data import DataSource
+from mvc_app.usecases.profile_base.profile_data import UseCaseProfile
 from mvc_app.usecases.profile_base.profile_services import register_profile
 from mvc_core.domain.clock.clock_data import Clock
-
+from mvc_core.domain.enums import CrossSense, TriggerMode
+from mvc_core.optimize.calibration.calibration_data import CalibrationConfig
+from mvc_core.optimize.components.objective.objective_data import ObjectiveConfig
+from mvc_core.optimize.components.param_bindings.param_bindings_services import (
+    bind_params,
+)
+from mvc_core.optimize.components.search_space.search_space_data import (
+    Choice,
+    SearchSpace,
+)
+from mvc_core.optimize.components.splitter.splitter_data import SplitConfig
 from mvc_core.strategies.components.features.feature_data import InputSpec
-from mvc_core.strategies.components.sources.source_1d_data import Source1DConfig
-from mvc_core.strategies.components.sources.source_1d_services import compute_scores_1d
+from mvc_core.strategies.components.filters.filter_services import (
+    block_cumulative_entries,
+)
 from mvc_core.strategies.components.normalizers.threshold_1d_data import (
     Threshold1DConfig,
 )
 from mvc_core.strategies.components.normalizers.threshold_1d_services import (
     normalize_1d_to_fls,
 )
-from mvc_core.strategies.components.sizers.sizer_data import SizerConfig
 from mvc_core.strategies.components.risk.risk_data import RiskConfig
-from mvc_core.strategies.components.filters.filter_services import (
-    block_cumulative_entries,
-)
-
-from mvc_core.domain.enums import TriggerMode, CrossSense
-
+from mvc_core.strategies.components.sizers.sizer_data import SizerConfig
+from mvc_core.strategies.components.sources.source_1d_data import Source1DConfig
+from mvc_core.strategies.components.sources.source_1d_services import compute_scores_1d
 from mvc_core.strategies.core.strategy_data import StrategyCfg, StrategyComponents
-
-from mvc_core.optimize.components.search_space.search_space_data import (
-    SearchSpace,
-    Choice,
-)
-from mvc_core.optimize.components.objective.objective_data import ObjectiveConfig
-from mvc_core.optimize.calibration.calibration_data import CalibrationConfig
-from mvc_core.optimize.components.param_bindings.param_bindings_services import (
-    bind_params_v2,
-)
-from mvc_core.optimize.components.splitter.splitter_data import SplitConfig
-
-from mvc_app.usecases.profile_base.profile_data import UseCaseProfile
-from mvc_app.usecases.profile_base.profile_services import register_profile
-
-
-
-from mvc_app.helpers.data_builder.data_sb11 import data_sb11_builder
-
 
 CAPITAL_INITIAL = 200_000_000.0
 POSITION_NOTIONAL_USD = 30_000_000.0
 
 
+start_load, end_load = "2013-05-01", "2027-01-01"
+start_slice, end_slice = "2013-05-01", datetime.today().strftime('%Y-%m-%d')
+fill_method_spot = "ffill"
+fill_method_fut = "dropna"
+
+data_builder = data_sb11_builder(start_load, end_load, start_slice, end_slice,
+                                 fill_method_spot, fill_method_fut,
+                                 source=DataSource.POSTGRES)
 
 
-
-
-
-
-# data_builder = data_sb11_builder("2013-05-01", "2026-01-01", "2013-05-01", "2025-12-08",
-#                                   fill_method = 'dropna')
-
-
-data_builder = data_sb11_builder("2013-05-01", "2027-01-01", 
-                                 "2013-05-01",datetime.today().strftime('%Y-%m-%d'),
-                                 fill_method_spot = 'ffill', 
-                                 fill_method_fut = 'dropna',
-                                 source = DataSource.POSTGRES)
 
 
 def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> StrategyCfg:
-    """
-    Stratégie SB11 : même chose que dans test_new_refacto.py.
-    """
 
     
     spec = InputSpec(
         base_keys={"spot_mid": "VHP", "spread": "SPREAD", "fut_close": "SB11"},
         recipes={
-            # "zscore": {
-            #     "base": "fut_close",
-            #     "ops": [
-            #         {"op": "shift", "periods": 2},
-            #         {"op": "zscore_smooth_ewm", "window": 18, "smooth_span": 1},
-            #     ],
-            # },
+
             "rsi": {
                 "base": "fut_close",
                 "ops": [
@@ -119,7 +95,6 @@ def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
     )
 
 
-    # src_cfg = Source1DConfig(mode="by_feature_key", feature_key="zscore")
     src_cfg = Source1DConfig(mode="by_feature_key", feature_key="rsi")
 
     th_cfg = Threshold1DConfig(
@@ -130,28 +105,6 @@ def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
         start_hold=True,
     )
 
-    # sz_cfg = SizerConfig(
-    #     enabled=True,
-    #     default_compose="set",
-    #     steps=[
-    #         {
-    #             "service": "constant",
-    #             "cfg": {"value": 1.0},
-    #             "compose": "set",
-    #         },
-    #         {
-    #             "service": "vol",
-    #             "compose": "scale",
-    #             "cfg": {
-    #                 "key": "ratio_vol",
-    #                 "mode": "inverse",
-    #                 "target_vol": 1.0,
-    #                 "floor": 0.25,
-    #                 "cap": 2.0,
-    #             },
-    #         },
-    #     ],
-    # )
 
 
     sz_cfg = SizerConfig(
@@ -164,17 +117,6 @@ def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
                 "cfg": {"value": 1.0},
                 "compose": "set",
             },
-            # {
-            #     "service": "vol",
-            #     "compose": "scale",
-            #     "cfg": {
-            #         "key": "ratio_vol",
-            #         "mode": "inverse",
-            #         "target_vol": 1.0,
-            #         "floor": 0.25,
-            #         "cap": 2.0,
-            #     },
-            # },
         ],
     )
 
@@ -219,7 +161,6 @@ def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
     }
 
     components = StrategyComponents(
-        # feature_map={}, 
         source_fn=compute_scores_1d,
         normalizer_fn=normalize_1d_to_fls,
         signalizer_fn=None,
@@ -235,16 +176,12 @@ def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
         sizer_cfg=sz_cfg,
         risk_cfg=risk_cfg,
         components=components,
-        # source_fn=compute_scores_1d,
-        # normalizer_fn=normalize_1d_to_fls,
         extras=strat_extras,
     )
 
 
 # def build_calib_sb11() -> CalibrationConfig:
-#     """
-#     CalibrationConfig (search_space + objective) pour WF SB11.
-#     """
+
 #     nb_trials = 150
 
 
@@ -263,10 +200,7 @@ def build_strategy_sb11(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
 #             ),
 #         },
 #         n_trials=nb_trials,
-#         # seed=42,
 #     )
-
-
 def build_calib_sb11() -> CalibrationConfig:
     """
     CalibrationConfig (search_space + objective) pour WF SB11.
@@ -279,32 +213,27 @@ def build_calib_sb11() -> CalibrationConfig:
             "normalizer.low": Choice([float(x) for x in range(10, 41, 10)]),
             "normalizer.high": Choice([float(x) for x in range(60, 91, 10)]),
 
+            # "input_spec.recipes[key=rsi].ops[op=rsi_ewm_smooth].window": Choice(
+            #     [21, 28, 35, 42, 49, 56, 63]
+            # ),
+            # "input_spec.recipes[key=rsi].ops[op=rsi_ewm_smooth].smooth_span": Choice(
+            #     [1, 3, 5]
+            # ),
         },
         n_trials=nb_trials,
         # seed=42,
     )
 
-# good result for random mode with this cfg
     obj = ObjectiveConfig(
         direction="maximize",
         weights={"sharpe": 2.0, "vol": -25.0, 'total_return_pct': 1.0},
-
         top_k=3,
     )
 
-
-    # obj = ObjectiveConfig(
-    #     direction="maximize",
-    #     weights={"sharpe": 3.0, "max_drawdown": -3.0},
-    #     # min_trades=5,
-    #     # min_sharpe=1.0,
-    #     # mdd_max=0.20,
-    #     top_k=nb_trials,
-    # )
     calib_cfg = CalibrationConfig(
         search_space=space,
         objective=obj,
-        bind_fn=bind_params_v2,
+        bind_fn=bind_params,
         keep_artifacts=False,
         top_k=nb_trials,
         bench_key="SB11",
@@ -323,7 +252,6 @@ def build_calib_sb11() -> CalibrationConfig:
         include_tail=True,
     )
 
-
     return calib_cfg, split_cfg
 
 
@@ -336,7 +264,9 @@ PROFILE = UseCaseProfile(
     strategy_cfg_builder=build_strategy_sb11,
     calib_builder=build_calib_sb11,
     bench_key = "SB11",
+    # wf_json_path=Path("save_wf_simu/wf_sb11_rsi_fut_shifted.json"),
     wf_json_path=Path("save_wf_simu/calib_temp/sb11_rsi_fut_calibration.json"),
+
 )
 
 register_profile(PROFILE)

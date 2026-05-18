@@ -23,11 +23,19 @@ class PostgresConfig:
     password: str = ""
 
     @classmethod
-    def from_env(cls) -> PostgresConfig:
+    def from_env(cls, env_path: str = "/tmp/secrets/.env") -> PostgresConfig:
         """
-        Create a config from environment variables.
+        Create a config from a .env file (falls back to os.environ if key not found).
         """
-        return cls(host=host,port=port,database=database,username=username,password=password)
+        from dotenv import dotenv_values
+        config = dotenv_values(env_path)
+        return cls(
+            host=config.get("POSTGRES_HOST"),
+            port=int(config.get("POSTGRES_PORT")),
+            database=config.get("POSTGRES_DATABASE"),
+            username=config.get("POSTGRES_USERNAME"),
+            password=config.get("POSTGRES_PASSWORD"),
+        )
 
 
 # ============================================================================
