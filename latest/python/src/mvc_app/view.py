@@ -150,3 +150,39 @@ def build_wf_oos_figure_price_only(
         title=title,
     )
     return fig
+
+
+def export_profile_trades_csv(profile_name: str, output_path: str) -> None:
+    """
+    Récupère les trades d'un profil et les exporte en CSV.
+
+    Colonnes : date (yyyy-mm-dd), trade (+1 = LONG, -1 = SHORT).
+
+    Args:
+        profile_name: Nom du profil (ex: "wf_sb11").
+        output_path: Chemin de sortie (ex: "/tmp/trades_wf_sb11.csv").
+    """
+    from pathlib import Path
+
+    from mvc_app.jobs import JobConfig, get_backtest_view
+    from mvc_core.performances.trades_reconstruction import build_trades_dataframe, print_trades_summary
+
+    job_cfg = JobConfig(profile_name=profile_name)
+    res = get_backtest_view(job_cfg)
+
+    decisions = res["oos"].get("decisions", [])
+    if not decisions:
+        print(f"No decisions found for profile '{profile_name}'.")
+        return
+
+    trades_df = build_trades_dataframe(decisions, include_open_positions=True)
+    print_trades_summary(trades_df)
+
+    signals = trades_df[["entry_date", "side"]].copy()
+    signals["trade"] = signals["side"].map({"LONG": 1, "SHORT": -1})
+    signals = signals.rename(columns={"entry_date": "date"})
+    signals["date"] = pd.to_datetime(signals["date"]).dt.strftime("%Y-%m-%d")
+    signals = signals[["date", "trade"]].sort_values("date").reset_index(drop=True)
+
+    signals.to_csv(output_path, index=False)
+    print(f"Trades saved to {Path(output_path).resolve()}")

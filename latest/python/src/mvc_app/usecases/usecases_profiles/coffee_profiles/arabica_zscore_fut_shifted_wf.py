@@ -2,79 +2,51 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
 import pandas as pd
 
+from mvc_app.helpers.data_builder.data_arabica import data_arabica_builder
+from mvc_app.helpers.data_loader.data_loader_data import (
+    DataSource,
+)
+from mvc_app.usecases.profile_base.profile_data import UseCaseProfile
+from mvc_app.usecases.profile_base.profile_services import register_profile
 from mvc_core.domain.clock.clock_data import Clock
-
+from mvc_core.domain.enums import CrossSense, TriggerMode
+from mvc_core.optimize.calibration.calibration_data import CalibrationConfig
+from mvc_core.optimize.components.objective.objective_data import ObjectiveConfig
+from mvc_core.optimize.components.param_bindings.param_bindings_services import (
+    bind_params,
+)
+from mvc_core.optimize.components.search_space.search_space_data import (
+    Choice,
+    SearchSpace,
+)
+from mvc_core.optimize.components.splitter.splitter_data import SplitConfig
 from mvc_core.strategies.components.features.feature_data import InputSpec
-from mvc_core.strategies.components.sources.source_1d_data import Source1DConfig
-from mvc_core.strategies.components.sources.source_1d_services import compute_scores_1d
+from mvc_core.strategies.components.filters.filter_services import (
+    block_cumulative_entries,
+)
 from mvc_core.strategies.components.normalizers.threshold_1d_data import (
     Threshold1DConfig,
 )
 from mvc_core.strategies.components.normalizers.threshold_1d_services import (
     normalize_1d_to_fls,
 )
-from mvc_core.strategies.components.sizers.sizer_data import SizerConfig
 from mvc_core.strategies.components.risk.risk_data import RiskConfig
-from mvc_core.strategies.components.filters.filter_services import (
-    block_cumulative_entries,
-)
-
-from mvc_core.domain.enums import TriggerMode, CrossSense
-
+from mvc_core.strategies.components.sizers.sizer_data import SizerConfig
+from mvc_core.strategies.components.sources.source_1d_data import Source1DConfig
+from mvc_core.strategies.components.sources.source_1d_services import compute_scores_1d
 from mvc_core.strategies.core.strategy_data import StrategyCfg, StrategyComponents
-
-from mvc_core.optimize.components.search_space.search_space_data import (
-    SearchSpace,
-    Choice,
-)
-from mvc_core.optimize.components.objective.objective_data import ObjectiveConfig
-from mvc_core.optimize.calibration.calibration_data import CalibrationConfig
-from mvc_core.optimize.components.param_bindings.param_bindings_services import (
-    bind_params_v2,
-)
-from mvc_core.optimize.components.splitter.splitter_data import SplitConfig
-
-from mvc_app.usecases.profile_base.profile_data import UseCaseProfile
-from mvc_app.usecases.profile_base.profile_services import register_profile
 
 CAPITAL_INITIAL = 200_000_000.0
 POSITION_NOTIONAL_USD = 20_000_000.0
 
-# ============================================================
-# Builders pour le use case WF ARBC (profile_test)
-# ============================================================
-
-from mvc_core.adapters.data.excel_loading.deepcore_loader_services import (
-    load_deepcore_multi_workbook,
-    extract_market_mid,
-)
 
 
-from mvc_app.helpers.data_builder.data_arabica import data_arabica_builder
-
-from typing import Dict, Tuple, Callable, Optional
-
-import pandas as pd
-
-from mvc_core.domain.clock.clock_data import Clock
-
-from mvc_app.helpers.data_loader.data_loader_data import (
-    CoffeeSpotCfg,
-    CoffeeFuturesCfg,
-    DataCfg,
-    DataSource,
-)
-from mvc_app.helpers.data_builder.builder import build_usecase_data
-
-
-
-from mvc_app.helpers.data_builder.data_arabica import data_arabica_builder
-
-
+# start_load, end_load = "1998-01-01", "2027-01-01"
+# start_slice, end_slice = "1998-05-07", datetime.today().strftime('%Y-%m-%d')
 start_load, end_load = "1998-01-01", "2027-01-01"
 start_slice, end_slice = "2013-05-01", datetime.today().strftime('%Y-%m-%d'),
 
@@ -91,7 +63,6 @@ data_builder = data_arabica_builder(start_load, end_load, start_slice, end_slice
 
 
 def build_strategy_arbc(clock: Clock, price_series: Dict[str, pd.Series]) -> StrategyCfg:
-
     spec = InputSpec(
         base_keys={"spot_mid": "BRZ_GC", "fut_close": "ARBC"},
         recipes={
@@ -239,15 +210,35 @@ def build_strategy_arbc(clock: Clock, price_series: Dict[str, pd.Series]) -> Str
 
 
 
+# def build_calib_arbc() -> CalibrationConfig:
+#     nb_trials = 100
+
+#     space = SearchSpace(
+#         engine="random",
+#         spec={
+#             "normalizer.low": Choice([-i / 10.0 for i in range(4, 40)]),
+#             "normalizer.high": Choice([i / 10.0 for i in range(4, 40)]),
+#             "input_spec.recipes[key=zscore_fut_shifted].ops[op=zscore_smooth_ewm].window": Choice(
+#                 [i for i in range(10, 50)]
+#             ),
+#             "input_spec.recipes[key=zscore_fut_shifted].ops[op=zscore_smooth_ewm].smooth_span": Choice(
+#                 [i for i in range(1, 5)]
+#             ),
+#         },
+#         n_trials=nb_trials,
+#     )
 def build_calib_arbc() -> CalibrationConfig:
+
 
     nb_trials = 30
 
     space = SearchSpace(
         engine="optuna",
         spec={
+
             "normalizer.low": Choice([-i / 10.0 for i in range(5, 30, 5)]),
             "normalizer.high": Choice([i / 10.0 for i in range(5, 30, 5)]),
+
         },
         n_trials=nb_trials,
         # seed=42,
@@ -262,7 +253,7 @@ def build_calib_arbc() -> CalibrationConfig:
     calib_cfg = CalibrationConfig(
         search_space=space,
         objective=obj,
-        bind_fn=bind_params_v2,
+        bind_fn=bind_params,
         keep_artifacts=False,
         top_k=nb_trials,
         bench_key="ARBC",
@@ -290,7 +281,6 @@ def build_calib_arbc() -> CalibrationConfig:
 # Enregistrement du profil dans le registry
 # ============================================================
 
-# PROFILE_NAME = "profile_test"
 PROFILE_NAME = "arabica_zscore_fut_shifted_wf"
 
 PROFILE = UseCaseProfile(
@@ -299,7 +289,9 @@ PROFILE = UseCaseProfile(
     strategy_cfg_builder=build_strategy_arbc, 
     calib_builder=build_calib_arbc,           
     bench_key="ARBC",
+    # wf_json_path=Path("save_wf_simu/wf_arbc_fut_shifted_calibration.json"),
     wf_json_path=Path("save_wf_simu/calib_temp/arbc_zscore_fut_calibration.json"),
+
 )
 
 register_profile(PROFILE)

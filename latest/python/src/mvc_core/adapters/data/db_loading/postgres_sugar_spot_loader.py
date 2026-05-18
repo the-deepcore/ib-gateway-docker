@@ -158,8 +158,10 @@ def format_sugar_spot(
     df["BID"] = pd.to_numeric(df["BID"], errors="coerce")
     df["OFFER"] = pd.to_numeric(df["OFFER"], errors="coerce")
     
-    # Compute MID
-    df["MID"] = (df["BID"] + df["OFFER"]) / 2
+    # Compute MID — cross-fill BID/OFFER so a single-sided quote still yields a value
+    bid_f = df["BID"].fillna(df["OFFER"])
+    offer_f = df["OFFER"].fillna(df["BID"])
+    df["MID"] = 0.5 * (bid_f + offer_f)
     
     # Sort by date
     df.sort_index(inplace=True)

@@ -68,64 +68,110 @@ def upsert_futures_row(name: str, date: str, open_: str, high: str, low: str, cl
         db.execute_write_querry(query, (open_, high, low, close, volume, now, name, date))
 
 
-def fetch_and_upsert():
+### LEGACY VERSION
+
+# def fetch_and_upsert():
+#     """
+#     Connect to IBKR, fetch the last 2 days of daily bars for each asset,
+#     and upsert T-1 (refresh yesterday) + T (today) into the database.
+#     """
+#     config = dotenv_values("/tmp/secrets/.env")
+
+#     ib = IB()
+#     ib.connect(config['IBGATEWAY_HOST'],config['IBGATEWAY_PORT'],clientId=1)
+
+#     date_today = datetime.datetime.now().date()
+#     date_yesterday = date_today - datetime.timedelta(days=1)
+#     results = {}
+
+#     for asset in ["KC", "SB", "RC"]:
+#         db_name = IBKR_TO_DB_NAME[asset]
+
+#         df = fetch_daily_history(ib, asset, duration="2 D")
+#         df.index = pd.to_datetime(df["date"]).dt.date
+
+#         # Upsert T-1 (yesterday) — refresh in case it was incomplete
+#         if date_yesterday in df.index:
+#             row_y = df.loc[df.index == date_yesterday].iloc[0]
+#             upsert_futures_row(
+#                 name=db_name,
+#                 date=str(date_yesterday),
+#                 open_=to_db_str(row_y["open"]),
+#                 high=to_db_str(row_y["high"]),
+#                 low=to_db_str(row_y["low"]),
+#                 close=to_db_str(row_y["close"]),
+#                 volume=str(int(row_y["volume"])),
+#             )
+#             print(f"{asset} ({db_name}) -> upserted T-1 ({date_yesterday}): "
+#                   f"O={row_y['open']:.2f} H={row_y['high']:.2f} L={row_y['low']:.2f} C={row_y['close']:.2f} V={int(row_y['volume'])}")
+
+#         # Upsert T (today)
+#         if date_today not in df.index:
+#             print(f"Warning: No data for {asset} ({db_name}) on {date_today}. Skipping.")
+#             continue
+
+#         row = df.loc[df.index == date_today].iloc[0]
+#         results[asset] = row
+
+#         upsert_futures_row(
+#             name=db_name,
+#             date=str(date_today),
+#             open_=to_db_str(row["open"]),
+#             high=to_db_str(row["high"]),
+#             low=to_db_str(row["low"]),
+#             close=to_db_str(row["close"]),
+#             volume=str(int(row["volume"])),
+#         )
+#         print(f"{asset} ({db_name}) -> upserted T ({date_today}): "
+#               f"O={row['open']:.2f} H={row['high']:.2f} L={row['low']:.2f} C={row['close']:.2f} V={int(row['volume'])}")
+
+#     ib.disconnect()
+
+#     if not results:
+#         print(f"No data fetched for any asset on {date_today}.")
+#     else:
+#         print(f"Done. {len(results)} asset(s) upserted for {date_today}.")
+
+
+def fetch_and_upsert(nb_periods: int = 2):
     """
-    Connect to IBKR, fetch the last 2 days of daily bars for each asset,
-    and upsert T-1 (refresh yesterday) + T (today) into the database.
+    Connect to IBKR, fetch the last nb_periods days of daily bars for each asset,
+    and upsert all retrieved rows into the database.
     """
     config = dotenv_values("/tmp/secrets/.env")
 
     ib = IB()
-    ib.connect(config['IBGATEWAY_HOST'],config['IBGATEWAY_PORT'],clientId=1)
+    ib.connect(config['IBGATEWAY_HOST'], config['IBGATEWAY_PORT'], clientId=1)
 
-    date_today = datetime.datetime.now().date()
-    date_yesterday = date_today - datetime.timedelta(days=1)
-    results = {}
+    total_upserted = 0
 
     for asset in ["KC", "SB", "RC"]:
         db_name = IBKR_TO_DB_NAME[asset]
 
-        df = fetch_daily_history(ib, asset, duration="2 D")
+        df = fetch_daily_history(ib, asset, duration=f"{nb_periods} D")
         df.index = pd.to_datetime(df["date"]).dt.date
 
-        # Upsert T-1 (yesterday) — refresh in case it was incomplete
-        if date_yesterday in df.index:
-            row_y = df.loc[df.index == date_yesterday].iloc[0]
-            upsert_futures_row(
-                name=db_name,
-                date=str(date_yesterday),
-                open_=to_db_str(row_y["open"]),
-                high=to_db_str(row_y["high"]),
-                low=to_db_str(row_y["low"]),
-                close=to_db_str(row_y["close"]),
-                volume=str(int(row_y["volume"])),
-            )
-            print(f"{asset} ({db_name}) -> upserted T-1 ({date_yesterday}): "
-                  f"O={row_y['open']:.2f} H={row_y['high']:.2f} L={row_y['low']:.2f} C={row_y['close']:.2f} V={int(row_y['volume'])}")
-
-        # Upsert T (today)
-        if date_today not in df.index:
-            print(f"Warning: No data for {asset} ({db_name}) on {date_today}. Skipping.")
+        if df.empty:
+            print(f"Warning: No data fetched for {asset} ({db_name}). Skipping.")
             continue
 
-        row = df.loc[df.index == date_today].iloc[0]
-        results[asset] = row
-
-        upsert_futures_row(
-            name=db_name,
-            date=str(date_today),
-            open_=to_db_str(row["open"]),
-            high=to_db_str(row["high"]),
-            low=to_db_str(row["low"]),
-            close=to_db_str(row["close"]),
-            volume=str(int(row["volume"])),
-        )
-        print(f"{asset} ({db_name}) -> upserted T ({date_today}): "
-              f"O={row['open']:.2f} H={row['high']:.2f} L={row['low']:.2f} C={row['close']:.2f} V={int(row['volume'])}")
+        for date, row in df.iterrows():
+            upsert_futures_row(
+                name=db_name,
+                date=str(date),
+                open_=to_db_str(row["open"]),
+                high=to_db_str(row["high"]),
+                low=to_db_str(row["low"]),
+                close=to_db_str(row["close"]),
+                volume=str(int(row["volume"])),
+            )
+            print(f"{asset} ({db_name}) -> upserted {date}: "
+                  f"O={row['open']:.2f} H={row['high']:.2f} L={row['low']:.2f} C={row['close']:.2f} V={int(row['volume'])}")
+            total_upserted += 1
 
     ib.disconnect()
 
-    if not results:
-        print(f"No data fetched for any asset on {date_today}.")
+    if total_upserted == 0:
+        print("No data upserted.")
     else:
-        print(f"Done. {len(results)} asset(s) upserted for {date_today}.")
+        print(f"Done. {total_upserted} row(s) upserted across all assets.")
