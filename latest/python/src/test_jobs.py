@@ -20,12 +20,6 @@ import glob
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-def get_trades(profile: str, output_path: str = None):
-    """Get trades from a walk-forward backtest profile and save to CSV."""
-    path = output_path or f"trades_{profile}.csv"
-    export_profile_trades_csv(profile, path)
-
-
 def update_calibration(profile):
     job_cfg = JobConfig(profile_name=profile)
     _res = run_wf_update_job(job_cfg)
