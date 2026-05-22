@@ -56,9 +56,9 @@ def main():
         get_trades("arabica_zscore_fut_shifted_wf")
         get_trades("robusta_zscore_fut_shifted_wf")
 
-        send_slack_notification("✅ Updated trades data successfully")
+        send_slack_notification("✅ [trades] Updated data successfully")
     except:
-        send_slack_notification("❌ Failed to update trades data")
+        send_slack_notification("❌ [trades] Failed to update data")
 
 
 if __name__ == "__main__":

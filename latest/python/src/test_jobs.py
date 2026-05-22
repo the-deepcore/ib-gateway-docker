@@ -25,7 +25,7 @@ def update_calibration(profile):
     _res = run_wf_update_job(job_cfg)
 
 
-def cropped_view(profile):
+def cropped_view_admin(profile):
     job_cfg = JobConfig(profile_name=profile)
     res = get_backtest_view(job_cfg)
     fig = build_wf_oos_figure_from_oos(
@@ -105,7 +105,13 @@ def test_fusion_strat_signals():
 
 def init_db():
     config = dotenv_values("/tmp/secrets/.env")
-    pgconfig = PostgresConfig(host=config['POSTGRES_HOST'],port=int(config['POSTGRES_PORT']),database=config['POSTGRES_DATABASE'],username=config['POSTGRES_USERNAME'],password=config['POSTGRES_PASSWORD'])
+    pgconfig = PostgresConfig(
+        host=config['POSTGRES_HOST'],
+        port=int(config['POSTGRES_PORT']),
+        database=config['POSTGRES_DATABASE'],
+        username=config['POSTGRES_USERNAME'],
+        password=config['POSTGRES_PASSWORD']
+    )
     init_postgres(pgconfig)
 
 
@@ -129,27 +135,27 @@ def main():
 
         profile = "wf_sb11"  # zscore-spot
         update_calibration(profile)
-        cropped_view(profile)
+        cropped_view_admin(profile=profile)
 
         profile = "wf_rsi_sb11" # rsi-spot
         update_calibration(profile)
-        cropped_view(profile)
+        cropped_view_admin(profile=profile)
 
         profile = "sb11_rsi_fut_shifted" # rsi-futures
         update_calibration(profile)
-        cropped_view(profile)
+        cropped_view_admin(profile=profile)
 
         profile = "arabica_zscore_fut_shifted_wf" # zscore
         update_calibration(profile)
-        cropped_view(profile)
+        cropped_view_admin(profile=profile)
 
         profile = "robusta_zscore_fut_shifted_wf" # zscore
         update_calibration(profile)
-        cropped_view(profile)
+        cropped_view_admin(profile=profile)
 
-        send_slack_notification("✅ Updated data and html files successfully")
+        send_slack_notification("✅ [admin] Updated data and html files successfully")
     except:
-        send_slack_notification("❌ Failed to update data and html files")
+        send_slack_notification("❌ [admin] Failed to update data and html files")
 
 
 if __name__ == "__main__":
