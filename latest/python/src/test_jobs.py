@@ -129,33 +129,28 @@ def send_slack_notification(message: str):
 
 
 def main():
-    try:
-        init_db()
-        fetch_and_upsert(nb_periods=20)
+    init_db()
+    fetch_and_upsert(nb_periods=20)
 
-        profile = "wf_sb11"  # zscore-spot
-        update_calibration(profile)
-        cropped_view_admin(profile=profile)
+    profile = "wf_sb11"  # zscore-spot
+    update_calibration(profile)
+    cropped_view_admin(profile=profile)
 
-        profile = "wf_rsi_sb11" # rsi-spot
-        update_calibration(profile)
-        cropped_view_admin(profile=profile)
+    profile = "wf_rsi_sb11" # rsi-spot
+    update_calibration(profile)
+    cropped_view_admin(profile=profile)
 
-        profile = "sb11_rsi_fut_shifted" # rsi-futures
-        update_calibration(profile)
-        cropped_view_admin(profile=profile)
+    profile = "sb11_rsi_fut_shifted" # rsi-futures
+    update_calibration(profile)
+    cropped_view_admin(profile=profile)
 
-        profile = "arabica_zscore_fut_shifted_wf" # zscore
-        update_calibration(profile)
-        cropped_view_admin(profile=profile)
+    profile = "arabica_zscore_fut_shifted_wf" # zscore
+    update_calibration(profile)
+    cropped_view_admin(profile=profile)
 
-        profile = "robusta_zscore_fut_shifted_wf" # zscore
-        update_calibration(profile)
-        cropped_view_admin(profile=profile)
-
-        send_slack_notification("✅ [admin] Updated data and html files successfully")
-    except:
-        send_slack_notification("❌ [admin] Failed to update data and html files")
+    profile = "robusta_zscore_fut_shifted_wf" # zscore
+    update_calibration(profile)
+    cropped_view_admin(profile=profile)
 
 
 if __name__ == "__main__":
