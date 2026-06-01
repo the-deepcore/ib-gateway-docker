@@ -4,6 +4,7 @@ start() {
   cd /app
   . .venv/bin/activate
   python3 src/app.py &
+  echo $(ps -e | grep -i 'python3' | awk '{ print $1 }' | head -n1) > /tmp/ibgateway.pid
 }
 
 stop() {
