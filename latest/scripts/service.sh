@@ -6,12 +6,22 @@ start() {
   python3 src/app.py &
 }
 
-case "$1" in 
+stop() {
+  ps aux | grep [a]pp.py | awk '{ print $2 }' | xargs -I '{}' kill -9 '{}'
+}
+
+case "$1" in
     start)
-       start
-       ;;
+        start
+        exit
+        ;;
+    stop)
+        stop
+        exit
+        ;;
     *)
-       echo "Usage: $0 {start}"
+
+    echo "Usage: $0 {start}"
 esac
 
 exit 0
