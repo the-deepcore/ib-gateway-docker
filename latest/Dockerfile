@@ -75,7 +75,8 @@ RUN apt-get install -yq python3
 RUN apt-get install -yq python3-pip
 RUN apt-get install -yq python3-venv
 RUN apt-get install -yq libpq-dev gcc unixodbc unixodbc-dev
-RUN apt-get install -yq screen
+RUN apt-get install -yq cron
+RUN apt-get install -yq vim
 
 ENV APP_HOME=/app
 
@@ -146,6 +147,10 @@ RUN apt-get update -y && \
 # Create log file
 RUN touch $APP_HOME/main.log
 RUN chown ibgateway: $APP_HOME/main.log
+
+RUN echo "*/1 * * * * python3 /app/process.py" > /tmp/new_entry
+RUN su -c "crontab /tmp/new_entry" ibgateway
+RUN cron
 
 USER ${USER_ID}:${USER_GID}
 WORKDIR ${HOME}
