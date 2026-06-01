@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 def process_status(process_name):
     try:
@@ -7,9 +8,8 @@ def process_status(process_name):
     except subprocess.CalledProcessError:
         return False
 
-# Example
 process_name = "python3"
 if process_status(process_name):
     print(f"Process {process_name} is running.")
 else:
-    subprocess.run(["/etc/init.d/ib-gateway", "start", "> /app/main.log"])
+    os.system("sh /etc/init.d/ib-gateway start > /app/main.log")
