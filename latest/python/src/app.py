@@ -65,5 +65,20 @@ def handle_trades():
         headers=[]
     )
 
+@app.route('/handle_compass', methods=['GET'])
+
+def handle_compass():
+    if request.args.get('token') == config['IBGATEWAY_TOKEN']:
+        logger.debug(
+            os.system('python3 /app/src/test_compass.py 2>&1')
+        )
+    else:
+        logger.debug("Invalid token")
+
+    return Response(
+        response='{}',
+        status=200,
+        headers=[]
+    )
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port='5000', debug=True)

@@ -78,12 +78,18 @@ def send_slack_notification(message: str):
 
 
 def main():
-    init_db()
-    fetch_and_upsert(nb_periods=20)
+    try:
 
-    profile = "wf_sb11"  # zscore-spot
-    update_calibration(profile)
-    cropped_view_client(profile=profile)
+        init_db()
+        fetch_and_upsert(nb_periods=20)
+
+        profile = "wf_sb11"  # zscore-spot
+        update_calibration(profile)
+        cropped_view_client(profile=profile)
+
+        send_slack_notification("✅ [client] Updated data and html files successfully")
+    except:
+        send_slack_notification("❌ [client] Failed to update data and html files")
 
 
 if __name__ == "__main__":

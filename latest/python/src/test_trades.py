@@ -47,13 +47,19 @@ def send_slack_notification(message: str):
 
 
 def main():
-    init_db()
+    try:
 
-    get_trades("wf_sb11")
-    get_trades("wf_rsi_sb11")
-    get_trades("sb11_rsi_fut_shifted")
-    get_trades("arabica_zscore_fut_shifted_wf")
-    get_trades("robusta_zscore_fut_shifted_wf")
+        init_db()
+
+        get_trades("wf_sb11")
+        get_trades("wf_rsi_sb11")
+        get_trades("sb11_rsi_fut_shifted")
+        get_trades("arabica_zscore_fut_shifted_wf")
+        get_trades("robusta_zscore_fut_shifted_wf")
+
+        send_slack_notification("✅ [trades] Updated data successfully")
+    except:
+        send_slack_notification("❌ [trades] Failed to update data")
 
 
 if __name__ == "__main__":

@@ -75,7 +75,6 @@ RUN apt-get install -yq python3
 RUN apt-get install -yq python3-pip
 RUN apt-get install -yq python3-venv
 RUN apt-get install -yq libpq-dev gcc unixodbc unixodbc-dev
-RUN apt-get install -yq cron
 RUN apt-get install -yq vim
 
 ENV APP_HOME=/app
@@ -99,7 +98,7 @@ ENV TWS_ACCEPT_INCOMING="accept"
 ENV READ_ONLY_API="no"
 ENV VNC_LOCALHOST="false"
 ENV VNC_SERVER_PASSWORD="myVncPassword"
-ENV TWOFA_TIMEOUT_ACTION="restart"
+ENV TWOFA_TIMEOUT_ACTION="exit"
 ENV RELOGIN_AFTER_TWOFA_TIMEOUT="yes"
 ENV EXISTING_SESSION_DETECTED_ACTION="primary"
 ENV TIME_ZONE="Europe/Paris"
@@ -148,14 +147,15 @@ RUN apt-get update -y && \
 RUN touch $APP_HOME/main.log
 RUN chown ibgateway: $APP_HOME/main.log
 
+# Add cron entry
+RUN apt-get update
+RUN apt-get -yqq install cron
 RUN echo "*/1 * * * * python3 /app/process.py" > /tmp/new_entry
 RUN su -c "crontab /tmp/new_entry" ibgateway
-RUN cron
 
 USER ${USER_ID}:${USER_GID}
 WORKDIR ${HOME}
 
-# Start run script
 CMD ["/home/ibgateway/scripts/run.sh"]
 
 LABEL org.opencontainers.image.source=https://github.com/gnzsnz/ib-gateway-docker

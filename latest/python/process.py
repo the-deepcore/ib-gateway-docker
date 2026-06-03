@@ -13,3 +13,10 @@ if process_status(process_name):
     print(f"Process {process_name} is running.")
 else:
     os.system("sh /etc/init.d/ib-gateway start > /app/main.log")
+
+
+process_name = "socat"
+if process_status(process_name):
+    print(f"Process {process_name} is running.")
+else:
+    os.system("sh /home/ibgateway/scripts/run.sh > /app/ibgateway.log")
