@@ -88,8 +88,6 @@ RUN python3 -m venv .venv
 RUN \. .venv/bin/activate && \
     pip install -r requirements.txt -v
 
-COPY ./scripts/service.sh /etc/init.d/ib-gateway
-
 # Environment
 ENV TWS_USERID="deepcorefreeacc2"
 ENV TWS_PASSWORD="Pyrenees54321!"
@@ -146,12 +144,6 @@ RUN apt-get update -y && \
 # Create log file
 RUN touch $APP_HOME/main.log
 RUN chown ibgateway: $APP_HOME/main.log
-
-# Add cron entry
-RUN apt-get update
-RUN apt-get -yqq install cron
-RUN echo "*/1 * * * * python3 /app/process.py" > /tmp/new_entry
-RUN su -c "crontab /tmp/new_entry" ibgateway
 
 USER ${USER_ID}:${USER_GID}
 WORKDIR ${HOME}
