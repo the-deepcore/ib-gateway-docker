@@ -11,10 +11,10 @@ from dotenv import dotenv_values
 
 config = dotenv_values("/tmp/secrets/.env")
 
-BASE_URL = config['COMPASS_STAGING_URL']
-HEADERS = {"access_token": config['COMPASS_STAGING_TOKEN']}
+BASE_URL = config['COMPASS_URL']
+HEADERS = {"access_token": config['COMPASS_TOKEN']}
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-INDEX = "DEEPCORETEST"
+INDEX = "MXDSLSSI"
 
 THEDEEPCORE_API_URL = config['THEDEEPCORE_URL']
 THEDEEPCORE_ACCESS_TOKEN = config['THEDEEPCORE_TOKEN']

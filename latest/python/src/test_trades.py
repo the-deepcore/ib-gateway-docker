@@ -48,7 +48,6 @@ def send_slack_notification(message: str):
 
 def main():
     try:
-
         init_db()
 
         get_trades("wf_sb11")
@@ -58,8 +57,10 @@ def main():
         get_trades("robusta_zscore_fut_shifted_wf")
 
         send_slack_notification("✅ [trades] Updated data successfully")
-    except:
-        send_slack_notification("❌ [trades] Failed to update data")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        send_slack_notification(f"❌ [trades] Failed to update data: {type(e).__name__}: {e}")
 
 
 if __name__ == "__main__":
