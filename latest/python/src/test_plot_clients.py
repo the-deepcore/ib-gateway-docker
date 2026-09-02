@@ -35,16 +35,18 @@ def cropped_view_client(profile):
         start_date = f"2023-01-01"
     )
 
-    fig.show()
-
     file_name = profile + '_client.html'
     file_path = '/tmp/' + file_name
 
+    # auto_open=False: on the headless K8s pod, Plotly's auto_open spawns a
+    # webbrowser subprocess that touches file_path in the background, racing
+    # with the upload_file() call below. That race is the source of the
+    # `IncompleteBody` error we saw on the S3 PutObject.
     fig.write_html(
         file_path,
         full_html=True,
         include_plotlyjs=True,
-        auto_open=True,
+        auto_open=False,
     )
 
     upload_file(file_path, file_name)
@@ -79,7 +81,6 @@ def send_slack_notification(message: str):
 
 def main():
     try:
-
         init_db()
         fetch_and_upsert(nb_periods=20)
 
@@ -88,10 +89,11 @@ def main():
         cropped_view_client(profile=profile)
 
         send_slack_notification("✅ [client] Updated data and html files successfully")
-    except:
-        send_slack_notification("❌ [client] Failed to update data and html files")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        send_slack_notification(f"❌ [client] Failed to update data and html files: {type(e).__name__}: {e}")
 
 
 if __name__ == "__main__":
     main()
-
