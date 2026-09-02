@@ -75,7 +75,7 @@ RUN apt-get install -yq python3
 RUN apt-get install -yq python3-pip
 RUN apt-get install -yq python3-venv
 RUN apt-get install -yq libpq-dev gcc unixodbc unixodbc-dev
-RUN apt-get install -yq screen
+RUN apt-get install -yq vim
 
 ENV APP_HOME=/app
 
@@ -88,8 +88,6 @@ RUN python3 -m venv .venv
 RUN \. .venv/bin/activate && \
     pip install -r requirements.txt -v
 
-COPY ./scripts/service.sh /etc/init.d/ib-gateway
-
 # Environment
 ENV TWS_USERID="deepcorefreeacc2"
 ENV TWS_PASSWORD="Pyrenees54321!"
@@ -98,7 +96,7 @@ ENV TWS_ACCEPT_INCOMING="accept"
 ENV READ_ONLY_API="no"
 ENV VNC_LOCALHOST="false"
 ENV VNC_SERVER_PASSWORD="myVncPassword"
-ENV TWOFA_TIMEOUT_ACTION="restart"
+ENV TWOFA_TIMEOUT_ACTION="exit"
 ENV RELOGIN_AFTER_TWOFA_TIMEOUT="yes"
 ENV EXISTING_SESSION_DETECTED_ACTION="primary"
 ENV TIME_ZONE="Europe/Paris"
@@ -143,13 +141,13 @@ RUN apt-get update -y && \
   chmod a+x ${SCRIPT_PATH}/*.sh && \
   mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
+# Create log file
 RUN touch $APP_HOME/main.log
 RUN chown ibgateway: $APP_HOME/main.log
 
 USER ${USER_ID}:${USER_GID}
 WORKDIR ${HOME}
 
-# Start run script
 CMD ["/home/ibgateway/scripts/run.sh"]
 
 LABEL org.opencontainers.image.source=https://github.com/gnzsnz/ib-gateway-docker

@@ -303,3 +303,138 @@ def bind_params(params: Dict[str, Any], base_cfg: StrategyCfg) -> Dict[str, Any]
 
 
 
+
+def bind_params_v2(params: Dict[str, Any], base_cfg: StrategyCfg) -> Dict[str, Any]:
+    """
+    Binder compatible StrategyCfg.
+    - params: dictionnaire { "normalizer.low": 0.5, "source.ops[0].window": 20, ... }
+    - base_cfg: StrategyCfg de base (non modifié)
+    Retourne:
+    {
+        "strategy_cfg": StrategyCfg(...),
+        "__applied_keys__": [...],
+        "__unknown_keys__": [...],
+    }
+    """
+
+
+
+    applied: set[str] = set()
+    work: Dict[str, Any] = {}
+    touched: set[str] = set()
+
+    # 1) extraire les objets de config depuis StrategyCfg
+    normalizer = getattr(base_cfg, "normalizer_cfg", None)
+    source = getattr(base_cfg, "source_cfg", None)
+    risk = getattr(base_cfg, "risk_cfg", None)
+    sizer = getattr(base_cfg, "sizer_cfg", None)
+    spec = getattr(base_cfg, "input_spec", None)
+
+    # eventuel signalizer dans extras (si tu l'utilises)
+    signalizer = None
+    if isinstance(base_cfg.extras, dict):
+        signalizer = base_cfg.extras.get("signalizer_cfg", None)
+
+    # 1bis) remplir le dict de travail "work" à partir des objets existants
+    if normalizer is not None:
+        work["normalizer"] = _deep_copy_cfg(normalizer)
+
+    if source is not None:
+        work["source"] = _deep_copy_cfg(source)
+
+    if risk is not None:
+        work["risk"] = _deep_copy_cfg(risk)
+
+    if sizer is not None:
+        work["sizer"] = _deep_copy_cfg(sizer)
+
+    if signalizer is not None:
+        work["signalizer"] = _deep_copy_cfg(signalizer)
+
+    if spec is not None:
+        work["input_spec"] = {
+            "base_keys": deepcopy(getattr(spec, "base_keys", {})),
+            "recipes": deepcopy(getattr(spec, "recipes", {})),
+            "extras": deepcopy(getattr(spec, "extras", {})),
+        }
+
+    # 2) appliquer les params via _path_set
+    for k, v in params.items():
+        root = k.split(".", 1)[0]
+        if root not in work:
+            # racine inconnue => on traitera ça comme param non appliqué
+            continue
+        ok = _path_set(work, k, v)
+        if ok:
+            applied.add(k)
+            touched.add(root)
+
+    # 3) reconstruire les blocs touchés depuis 'work'
+    new_normalizer = normalizer
+    new_source = source
+    new_risk = risk
+    new_sizer = sizer
+    new_signalizer = signalizer
+    new_spec = spec
+
+    if "normalizer" in touched and normalizer is not None:
+        cls = type(normalizer)
+        new_normalizer = cls(**work["normalizer"])
+
+    if "source" in touched and source is not None:
+        cls = type(source)
+        new_source = cls(**work["source"])
+
+    if "risk" in touched and risk is not None:
+        new_risk = RiskConfig(**work["risk"])
+
+    if "sizer" in touched and sizer is not None:
+
+        new_sizer = SizerConfig(**work["sizer"])
+
+    if "signalizer" in touched and signalizer is not None:
+        cls = type(signalizer)
+        new_signalizer = cls(**work["signalizer"])
+
+    if "input_spec" in touched and spec is not None:
+        w = work["input_spec"]
+        new_spec = InputSpec(
+            base_keys=w["base_keys"],
+            recipes=w["recipes"],
+            extras=w["extras"],
+        )
+
+    if isinstance(base_cfg.extras, dict):
+        new_extras = deepcopy(base_cfg.extras)
+    else:
+        new_extras = {}
+
+    if "signalizer" in touched and new_signalizer is not None:
+        new_extras["signalizer_cfg"] = new_signalizer
+
+
+    new_components = StrategyComponents(
+        source_fn=base_cfg.components.source_fn if base_cfg.components else None,
+        normalizer_fn=base_cfg.components.normalizer_fn if base_cfg.components else None,
+        # on ne modifie pas sizer_fn / risk_fn / signalizer_fn ici (ils seront construits dans build_runtime_strategy)
+    )
+    # 5) construire le nouveau StrategyCfg
+    new_strategy = StrategyCfg(
+        instrument=base_cfg.instrument,
+        input_spec=new_spec if new_spec is not None else base_cfg.input_spec,
+        source_cfg=new_source if new_source is not None else base_cfg.source_cfg,
+        normalizer_cfg=new_normalizer if new_normalizer is not None else base_cfg.normalizer_cfg,
+        sizer_cfg=new_sizer if new_sizer is not None else base_cfg.sizer_cfg,
+        risk_cfg=new_risk if new_risk is not None else base_cfg.risk_cfg,
+        components=new_components,
+        # source_fn=base_cfg.components.source_fn,
+        # normalizer_fn=base_cfg.components.normalizer_fn,
+        extras=new_extras,
+    )
+
+    # 6) mode strict: on expose les clés appliquées et inconnues
+    overrides: Dict[str, Any] = {}
+    overrides["strategy_cfg"] = new_strategy
+    overrides["__applied_keys__"] = sorted(applied)
+    overrides["__unknown_keys__"] = sorted(set(params.keys()) - applied)
+    return overrides

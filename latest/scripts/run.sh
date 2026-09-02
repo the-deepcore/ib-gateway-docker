@@ -11,6 +11,12 @@ echo "*************************************************************************"
 # shellcheck disable=SC1091
 source "${SCRIPT_PATH}/common.sh"
 
+start_python() {
+  cd /app
+  source .venv/bin/activate
+  python3 src/app.py &
+}
+
 # shellcheck disable=SC2329
 stop_ibc() {
 	echo ".> 😘 Received SIGINT or SIGTERM. Shutting down IB Gateway."
@@ -70,6 +76,8 @@ start_vnc() {
 }
 
 start_IBC() {
+  start_python > /app/main.log
+
 	echo ".> Starting IBC in ${TRADING_MODE} mode, with params:"
 	echo ".>		Version: ${TWS_MAJOR_VRSN}"
 	echo ".>		program: ${IBC_COMMAND:-gateway}"
