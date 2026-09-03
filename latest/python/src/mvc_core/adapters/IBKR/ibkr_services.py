@@ -3,6 +3,8 @@ from ib_insync import IB, ContFuture, util
 import pandas as pd
 import datetime
 
+from mvc_app.jobs import JobConfig, get_backtest_view
+from mvc_core.performances.trades_reconstruction import build_trades_dataframe
 from mvc_core.adapters.db_connection.postgres_connection import get_postgres
 
 from dotenv import dotenv_values
@@ -44,13 +46,6 @@ def to_db_str(value: float) -> str:
     return str(int(round(value * 100)))
 
 
-def update_trades_db(signals: pd.DataFrame):
-    """Import trades dataframe in db"""
-    db = get_postgres()
-    signals.to_sql('data_market_intelligence_trades', con=db, if_exists='append', index=False, chunksize=1000)
-    return True
-
-
 def upsert_futures_row(name: str, date: str, open_: str, high: str, low: str, close: str, volume: str):
     db = get_postgres()
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -74,6 +69,53 @@ def upsert_futures_row(name: str, date: str, open_: str, high: str, low: str, cl
         """
         db.execute_write_querry(query, (open_, high, low, close, volume, now, name, date))
 
+
+def upsert_trade_row(name: str, date: str, trade: int):
+    db = get_postgres()
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+
+    existing = db.select_from_query(
+        f"SELECT id FROM public.data_market_intelligence_trades "
+        f"WHERE name = '{name}' AND date = '{date}' LIMIT 1"
+    )
+
+    if existing.empty:
+        query = """
+            INSERT INTO public.data_market_intelligence_trades
+                (name, date, trade, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        db.execute_write_querry(query, (name, date, trade, now, now))
+    else:
+        query = """
+            UPDATE public.data_market_intelligence_trades
+            SET trade = %s, updated_at = %s
+            WHERE name = %s AND date = %s
+        """
+        db.execute_write_querry(query, (trade, now, name, date))
+
+
+
+def fetch_and_upsert_trades(profile: str):
+    """
+    Rebuild trades of a profile and upsert them (name / date / +1|-1) into the database.
+    Existing rows (same name + date) are updated, new ones inserted.
+    """
+    res = get_backtest_view(JobConfig(profile_name=profile))
+    decisions = res["oos"].get("decisions", [])
+    trades_df = build_trades_dataframe(decisions, include_open_positions=True)
+
+    if trades_df.empty:
+        print(f"Warning: No trades for {profile}. Skipping.")
+        return
+
+    for _, row in trades_df.iterrows():
+        date = pd.to_datetime(row["entry_date"]).strftime("%Y-%m-%d %H:%M:%S")
+        trade = 1 if row["side"] == "LONG" else -1
+        upsert_trade_row(name=profile, date=date, trade=trade)
+        print(f"{profile} -> upserted {date}: trade={trade}")
+
+    print(f"Done. {len(trades_df)} trade(s) upserted for {profile}.")
 
 ### LEGACY VERSION
 
