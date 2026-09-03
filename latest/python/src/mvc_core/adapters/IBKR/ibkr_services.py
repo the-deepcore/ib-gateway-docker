@@ -44,6 +44,13 @@ def to_db_str(value: float) -> str:
     return str(int(round(value * 100)))
 
 
+def update_trades_db(signals: pd.DataFrame):
+    """Import trades dataframe in db"""
+    db = get_postgres()
+    signals.to_sql('data_market_intelligence_trades', con=db, if_exists='append', index=False, chunksize=1000)
+    return True
+
+
 def upsert_futures_row(name: str, date: str, open_: str, high: str, low: str, close: str, volume: str):
     db = get_postgres()
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")

@@ -185,4 +185,6 @@ def export_profile_trades_csv(profile_name: str, output_path: str) -> None:
     signals = signals[["date", "trade"]].sort_values("date").reset_index(drop=True)
 
     signals.to_csv(output_path, index=False)
+
+    update_trades_db(signals)
     print(f"Trades saved to {Path(output_path).resolve()}")
