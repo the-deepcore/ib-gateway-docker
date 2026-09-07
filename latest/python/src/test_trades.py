@@ -48,29 +48,29 @@ def send_slack_notification(message: str):
 
 
 def main():
-    # try:
-    init_db()
+    try:
+        init_db()
 
-    get_trades("wf_sb11")
-    fetch_and_upsert_trades("wf_sb11")
+        get_trades("wf_sb11")
+        fetch_and_upsert_trades("wf_sb11")
 
-    get_trades("wf_rsi_sb11")
-    fetch_and_upsert_trades("wf_rsi_sb11")
+        get_trades("wf_rsi_sb11")
+        fetch_and_upsert_trades("wf_rsi_sb11")
 
-    get_trades("sb11_rsi_fut_shifted")
-    fetch_and_upsert_trades("sb11_rsi_fut_shifted")
+        get_trades("sb11_rsi_fut_shifted")
+        fetch_and_upsert_trades("sb11_rsi_fut_shifted")
 
-    get_trades("arabica_zscore_fut_shifted_wf")
-    fetch_and_upsert_trades("arabica_zscore_fut_shifted_wf")
+        get_trades("arabica_zscore_fut_shifted_wf")
+        fetch_and_upsert_trades("arabica_zscore_fut_shifted_wf")
 
-    get_trades("robusta_zscore_fut_shifted_wf")
-    fetch_and_upsert_trades("robusta_zscore_fut_shifted_wf")
+        get_trades("robusta_zscore_fut_shifted_wf")
+        fetch_and_upsert_trades("robusta_zscore_fut_shifted_wf")
 
-    #     send_slack_notification("✅ [trades] Updated data successfully")
-    # except Exception as e:
-    #     import traceback
-    #     traceback.print_exc()
-    #     send_slack_notification(f"❌ [trades] Failed to update data: {type(e).__name__}: {e}")
+        send_slack_notification("✅ [trades] Updated data successfully")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        send_slack_notification(f"❌ [trades] Failed to update data: {type(e).__name__}: {e}")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,9 @@ from dateutil import parser
 
 from dotenv import dotenv_values
 
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+
 
 config = dotenv_values("/tmp/secrets/.env")
 
@@ -108,12 +111,23 @@ def get_trades(client: httpx.Client):
     return response.json()["market_intelligence_trades"]
 
 
-def main() -> None:
-    with httpx.Client(headers=HEADERS) as client:
+def send_slack_notification(message: str):
+    client = WebClient(token=config['SLACK_TOKEN'])
+    try:
+        response = client.chat_postMessage(
+            channel=config['SLACK_CHANNEL'],
+            text=message,
+            username=config['SLACK_USERNAME']
+        )
+    except SlackApiError as exception:
+        print(exception)
 
-        dates = []
 
-        try:
+def main():
+    try:
+        with httpx.Client(headers=HEADERS) as client:
+            dates = []
+
             # 1. List existing allocations
             print("=== Listing allocations ===")
             allocations = list_allocations(client, INDEX)
@@ -121,10 +135,6 @@ def main() -> None:
                 date = parse_date(alloc['date'])
                 dates.append(date)
 
-        except:
-            print("No allocations found")
-
-        try:
             # 2. Create new allocations
             print("=== Create allocations ===")
             response = get_trades(client)
@@ -135,8 +145,12 @@ def main() -> None:
                     weights = {"MXSUGAFE": item['trade']}
                     created = post_allocation(client, INDEX, date, weights)
                     print(created)
-        except:
-            print("Could not create allocations")
+
+            send_slack_notification("✅ [compass] Updated data successfully")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        send_slack_notification(f"❌ [compass] Failed to update data: {type(e).__name__}: {e}")
             
 
 if __name__ == "__main__":
