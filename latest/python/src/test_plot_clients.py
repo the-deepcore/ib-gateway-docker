@@ -90,19 +90,19 @@ def main():
 
         profile = "wf_rsi_sb11" # rsi-spot
         update_calibration(profile)
-        cropped_view_admin(profile=profile)
+        cropped_view_client(profile=profile)
 
         profile = "sb11_rsi_fut_shifted" # rsi-futures
         update_calibration(profile)
-        cropped_view_admin(profile=profile)
+        cropped_view_client(profile=profile)
 
         profile = "arabica_zscore_fut_shifted_wf" # zscore
         update_calibration(profile)
-        cropped_view_admin(profile=profile)
+        cropped_view_client(profile=profile)
 
         profile = "robusta_zscore_fut_shifted_wf" # zscore
         update_calibration(profile)
-        cropped_view_admin(profile=profile)
+        cropped_view_client(profile=profile)
 
         send_slack_notification("✅ [client] Updated data and html files successfully")
     except Exception as e:
