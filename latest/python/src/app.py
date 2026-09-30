@@ -1,7 +1,7 @@
 from flask import Flask, Response, request
 from dotenv import dotenv_values
 from datetime import date
-import os
+import json
 import subprocess
 import logging
 
@@ -17,15 +17,30 @@ logger = logging.getLogger(__name__)
 
 config = dotenv_values("/tmp/secrets/.env")
 
+
+def run_script(script, *args):
+    result = subprocess.run(
+        ['python3', f'/app/src/{script}', *args],
+        capture_output=True,
+        text=True
+    )
+    logger.debug(result.stdout)
+    logger.debug(result.stderr)
+    return result
+
 @app.route('/')
 
 @app.route('/handle_request', methods=['GET'])
 
 def handle_request():
     if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        logger.debug(
-            os.system('python3 /app/src/test_jobs.py 2>&1')
-        )
+        result = run_script('test_jobs.py')
+        if result.returncode != 0:
+            return Response(
+                response=json.dumps({'error': f'{request.path} failed'}),
+                status=500,
+                mimetype='application/json'
+            )
     else:
         logger.debug("Invalid token")
 
@@ -39,9 +54,13 @@ def handle_request():
 
 def handle_request_client():
     if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        logger.debug(
-            os.system('python3 /app/src/test_plot_clients.py 2>&1')
-        )
+        result = run_script('test_plot_clients.py')
+        if result.returncode != 0:
+            return Response(
+                response=json.dumps({'error': f'{request.path} failed'}),
+                status=500,
+                mimetype='application/json'
+            )
     else:
         logger.debug("Invalid token")
 
@@ -55,9 +74,13 @@ def handle_request_client():
 
 def handle_trades():
     if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        logger.debug(
-            os.system('python3 /app/src/test_trades.py 2>&1')
-        )
+        result = run_script('test_trades.py')
+        if result.returncode != 0:
+            return Response(
+                response=json.dumps({'error': f'{request.path} failed'}),
+                status=500,
+                mimetype='application/json'
+            )
     else:
         logger.debug("Invalid token")
 
@@ -71,9 +94,13 @@ def handle_trades():
 
 def handle_compass():
     if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        logger.debug(
-            os.system('python3 /app/src/test_compass.py 2>&1')
-        )
+        result = run_script('test_compass.py')
+        if result.returncode != 0:
+            return Response(
+                response=json.dumps({'error': f'{request.path} failed'}),
+                status=500,
+                mimetype='application/json'
+            )
     else:
         logger.debug("Invalid token")
 
@@ -101,18 +128,15 @@ def handle_cepea_differential():
             mimetype='application/json'
         )
 
-    result = subprocess.run(
-        ['python3', '/app/src/cepea_differential.py',
-         '--date', cepea_date.isoformat(),
-         '--arabica', str(arabica),
-         '--robusta', str(robusta)],
-        capture_output=True,
-        text=True
+    result = run_script(
+        'cepea_differential.py',
+        '--date', cepea_date.isoformat(),
+        '--arabica', str(arabica),
+        '--robusta', str(robusta)
     )
-    logger.debug(result.stderr)
     if result.returncode != 0:
         return Response(
-            response='{"error": "cepea_differential failed"}',
+            response=json.dumps({'error': f'{request.path} failed'}),
             status=500,
             mimetype='application/json'
         )
