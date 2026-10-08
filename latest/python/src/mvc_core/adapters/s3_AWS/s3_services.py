@@ -14,7 +14,9 @@ from botocore.exceptions import ClientError
 
 from dotenv import dotenv_values
 
-BUCKET = "thedeepcore"
+# Staging sets AWS_BUCKET in its secret so it never writes to the production
+# bucket, which the-deepcore-app serves Market Intelligence pages from.
+BUCKET = dotenv_values("/tmp/secrets/.env").get("AWS_BUCKET") or "thedeepcore"
 CALIBRATION_PREFIX = "calibrations/"
 
 _client = None
