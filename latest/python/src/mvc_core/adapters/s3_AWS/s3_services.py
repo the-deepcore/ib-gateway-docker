@@ -15,6 +15,10 @@ from botocore.exceptions import ClientError
 from dotenv import dotenv_values
 
 BUCKET = "thedeepcore"
+# Staging sets S3_PREFIX=staging/ in its secret: every key it reads or writes
+# then lives under staging/, so it never overwrites the files production
+# serves from the same bucket. Production leaves it unset (bucket root).
+S3_PREFIX = dotenv_values("/tmp/secrets/.env").get("S3_PREFIX") or ""
 CALIBRATION_PREFIX = "calibrations/"
 
 _client = None
@@ -33,29 +37,42 @@ def _get_client():
     return _client
 
 
+def _key(key: str) -> str:
+    return S3_PREFIX + key
+
+
 def upload_json(data: Dict[str, Any], key: str) -> None:
     """Upload a Python dict as JSON to S3 under calibrations/."""
     _get_client().put_object(
         Bucket=BUCKET,
-        Key=CALIBRATION_PREFIX + key,
+        Key=_key(CALIBRATION_PREFIX + key),
         Body=json.dumps(data, indent=2),
         ContentType="application/json",
     )
 
 
 def download_json(key: str) -> Dict[str, Any]:
-    """Download a JSON from S3 calibrations/ and return as dict."""
-    resp = _get_client().get_object(
-        Bucket=BUCKET,
-        Key=CALIBRATION_PREFIX + key,
-    )
+    """Download a JSON from S3 calibrations/ and return as dict.
+
+    With a prefix (staging), a calibration staging hasn't written yet is read
+    from production's copy. Reading never modifies production's files.
+    """
+    try:
+        resp = _get_client().get_object(
+            Bucket=BUCKET,
+            Key=_key(CALIBRATION_PREFIX + key),
+        )
+    except ClientError as e:
+        if not S3_PREFIX or e.response["Error"]["Code"] not in ("NoSuchKey", "404"):
+            raise
+        resp = _get_client().get_object(Bucket=BUCKET, Key=CALIBRATION_PREFIX + key)
     return json.loads(resp["Body"].read())
 
 
 def upload_file(local_path: str, s3_key: str) -> None:
     """Upload a local file to S3 bucket root."""
-    _get_client().upload_file(local_path, BUCKET, s3_key)
-    print(f"File {local_path} uploaded to bucket {BUCKET} as {s3_key}.")
+    _get_client().upload_file(local_path, BUCKET, _key(s3_key))
+    print(f"File {local_path} uploaded to bucket {BUCKET} as {_key(s3_key)}.")
 
 
 def generate_presigned_url(key: str, expires_in: int = 86400 * 5) -> str:
@@ -63,7 +80,7 @@ def generate_presigned_url(key: str, expires_in: int = 86400 * 5) -> str:
     try:
         url = _get_client().generate_presigned_url(
             ClientMethod="get_object",
-            Params={"Bucket": BUCKET, "Key": key},
+            Params={"Bucket": BUCKET, "Key": _key(key)},
             ExpiresIn=expires_in,
         )
     except ClientError:
@@ -81,4 +98,4 @@ def bulk_upload_calibrations(file_paths: list) -> None:
         with open(p, "r") as f:
             data = json.load(f)
         upload_json(data, p.name)
-        print(f"Uploaded {p.name} -> s3://{BUCKET}/{CALIBRATION_PREFIX}{p.name}")
+        print(f"Uploaded {p.name} -> s3://{BUCKET}/{_key(CALIBRATION_PREFIX + p.name)}")
