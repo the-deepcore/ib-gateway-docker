@@ -17,9 +17,10 @@ config = dotenv_values("/tmp/secrets/.env")
 BASE_URL = config['COMPASS_URL']
 HEADERS = {"access_token": config['COMPASS_TOKEN']}
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-# Compass index to write allocations to. Staging sets COMPASS_INDEX to its
-# test index so it never writes to the production one.
-INDEX = config.get("COMPASS_INDEX") or "MXDSLSSI"
+# Compass index to write allocations to, from .env: MXDSLSSI in production,
+# DEEPCORETEST on staging. Required, with no default, so an environment
+# missing it fails instead of silently writing to the production index.
+INDEX = config['COMPASS_INDEX']
 
 THEDEEPCORE_API_URL = config['THEDEEPCORE_URL']
 THEDEEPCORE_ACCESS_TOKEN = config['THEDEEPCORE_TOKEN']
