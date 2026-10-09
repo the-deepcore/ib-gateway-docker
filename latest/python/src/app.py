@@ -1,6 +1,7 @@
 from flask import Flask, Response, request
 from dotenv import dotenv_values
 from datetime import date
+import hmac
 import json
 import subprocess
 import logging
@@ -28,21 +29,33 @@ def run_script(script, *args):
     logger.debug(result.stderr)
     return result
 
+
+@app.before_request
+def require_token():
+    # Every endpoint starts a job, so refuse anything without the right token.
+    # 401 (rather than 200 "{}") makes a token mismatch fail loudly in
+    # the-deepcore-app's workers instead of looking like a successful run.
+    token = request.args.get('token') or ''
+    if not hmac.compare_digest(token, config['IBGATEWAY_TOKEN']):
+        logger.warning("Invalid token for %s from %s", request.path, request.remote_addr)
+        return Response(
+            response='{"error": "invalid token"}',
+            status=401,
+            mimetype='application/json'
+        )
+
 @app.route('/')
 
 @app.route('/handle_request', methods=['GET'])
 
 def handle_request():
-    if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        result = run_script('test_jobs.py')
-        if result.returncode != 0:
-            return Response(
-                response=json.dumps({'error': f'{request.path} failed'}),
-                status=500,
-                mimetype='application/json'
-            )
-    else:
-        logger.debug("Invalid token")
+    result = run_script('test_jobs.py')
+    if result.returncode != 0:
+        return Response(
+            response=json.dumps({'error': f'{request.path} failed'}),
+            status=500,
+            mimetype='application/json'
+        )
 
     return Response(
         response='{}',
@@ -53,16 +66,13 @@ def handle_request():
 @app.route('/handle_request_client', methods=['GET'])
 
 def handle_request_client():
-    if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        result = run_script('test_plot_clients.py')
-        if result.returncode != 0:
-            return Response(
-                response=json.dumps({'error': f'{request.path} failed'}),
-                status=500,
-                mimetype='application/json'
-            )
-    else:
-        logger.debug("Invalid token")
+    result = run_script('test_plot_clients.py')
+    if result.returncode != 0:
+        return Response(
+            response=json.dumps({'error': f'{request.path} failed'}),
+            status=500,
+            mimetype='application/json'
+        )
 
     return Response(
         response='{}',
@@ -73,16 +83,13 @@ def handle_request_client():
 @app.route('/handle_trades', methods=['GET'])
 
 def handle_trades():
-    if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        result = run_script('test_trades.py')
-        if result.returncode != 0:
-            return Response(
-                response=json.dumps({'error': f'{request.path} failed'}),
-                status=500,
-                mimetype='application/json'
-            )
-    else:
-        logger.debug("Invalid token")
+    result = run_script('test_trades.py')
+    if result.returncode != 0:
+        return Response(
+            response=json.dumps({'error': f'{request.path} failed'}),
+            status=500,
+            mimetype='application/json'
+        )
 
     return Response(
         response='{}',
@@ -93,16 +100,13 @@ def handle_trades():
 @app.route('/handle_compass', methods=['GET'])
 
 def handle_compass():
-    if request.args.get('token') == config['IBGATEWAY_TOKEN']:
-        result = run_script('test_compass.py')
-        if result.returncode != 0:
-            return Response(
-                response=json.dumps({'error': f'{request.path} failed'}),
-                status=500,
-                mimetype='application/json'
-            )
-    else:
-        logger.debug("Invalid token")
+    result = run_script('test_compass.py')
+    if result.returncode != 0:
+        return Response(
+            response=json.dumps({'error': f'{request.path} failed'}),
+            status=500,
+            mimetype='application/json'
+        )
 
     return Response(
         response='{}',
@@ -113,10 +117,6 @@ def handle_compass():
 @app.route('/cepea_differential', methods=['GET'])
 
 def handle_cepea_differential():
-    if request.args.get('token') != config['IBGATEWAY_TOKEN']:
-        logger.debug("Invalid token")
-        return Response(response='{}', status=200, headers=[])
-
     try:
         cepea_date = date.fromisoformat(request.args.get('date', ''))
         arabica = float(request.args['arabica'])
