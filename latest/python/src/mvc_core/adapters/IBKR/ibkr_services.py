@@ -2,6 +2,7 @@ from ib_insync import IB, ContFuture, util
 
 import pandas as pd
 import datetime
+import random
 
 from mvc_app.jobs import JobConfig, get_backtest_view
 from mvc_core.performances.trades_reconstruction import build_trades_dataframe
@@ -186,11 +187,18 @@ def fetch_and_upsert(nb_periods: int = 2):
     """
     Connect to IBKR, fetch the last nb_periods days of daily bars for each asset,
     and upsert all retrieved rows into the database.
+
+    Picks a random clientId in [10, 31] on each call. ib_insync rejects a
+    second concurrent connection that shares a clientId, and IB Gateway
+    caps the API slots at 32 by default, so we stay well below. Random
+    (rather than a per-script fixed value) also covers the case where
+    the same script gets fired twice in parallel — which is exactly what
+    we suspect happens at 17:30 with the double trigger.
     """
     config = dotenv_values("/tmp/secrets/.env")
 
     ib = IB()
-    ib.connect(config['IBGATEWAY_HOST'], config['IBGATEWAY_PORT'], clientId=1)
+    ib.connect(config['IBGATEWAY_HOST'], config['IBGATEWAY_PORT'], clientId=random.randint(10, 31))
 
     total_upserted = 0
 
