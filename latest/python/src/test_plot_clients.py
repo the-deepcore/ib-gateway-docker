@@ -12,18 +12,11 @@ from mvc_core.plotting.figures import plot_price_equity
 from mvc_core.adapters.db_connection.postgres_connection import PostgresConfig, get_postgres, init_postgres
 from mvc_core.adapters.IBKR.ibkr_services import fetch_and_upsert
 from mvc_core.adapters.s3_AWS.s3_services import upload_file, generate_presigned_url, bulk_upload_calibrations
-from mvc_core.observability import (
-    install_stdout_capture,
-    step,
-    write_crash_report,
-    write_run_report,
-    send_slack_notification,
-)
+from mvc_core.observability import run_job, step
 
 from dotenv import dotenv_values
 
 import glob
-
 
 def update_calibration(profile):
     job_cfg = JobConfig(profile_name=profile)
@@ -91,39 +84,30 @@ def init_db():
     init_postgres(pgconfig)
 
 
+def run():
+    with step("init_db"):
+        init_db()
+    with step("fetch_and_upsert", writes_data=True):
+        fetch_and_upsert(nb_periods=20)
+
+    for profile in ("wf_sb11", "wf_rsi_sb11", "sb11_rsi_fut_shifted"):
+        with step(f"update_calibration({profile})"):
+            update_calibration(profile)
+        with step(f"cropped_view_client({profile})", writes_data=True):
+            cropped_view_client(profile=profile)
+
+    with step("cropped_view_client_fusion", writes_data=True):
+        cropped_view_client_fusion()
+
+    for profile in ("arabica_zscore_fut_shifted_wf", "robusta_zscore_fut_shifted_wf"):
+        with step(f"update_calibration({profile})"):
+            update_calibration(profile)
+        with step(f"cropped_view_client({profile})", writes_data=True):
+            cropped_view_client(profile=profile)
 
 
 def main():
-    install_stdout_capture()
-    label = "[client]"
-    try:
-        with step("init_db"):
-            init_db()
-        with step("fetch_and_upsert", writes_data=True):
-            fetch_and_upsert(nb_periods=20)
-
-        for profile in ("wf_sb11", "wf_rsi_sb11", "sb11_rsi_fut_shifted"):
-            with step(f"update_calibration({profile})"):
-                update_calibration(profile)
-            with step(f"cropped_view_client({profile})", writes_data=True):
-                cropped_view_client(profile=profile)
-
-        with step("cropped_view_client_fusion", writes_data=True):
-            cropped_view_client_fusion()
-
-        for profile in ("arabica_zscore_fut_shifted_wf", "robusta_zscore_fut_shifted_wf"):
-            with step(f"update_calibration({profile})"):
-                update_calibration(profile)
-            with step(f"cropped_view_client({profile})", writes_data=True):
-                cropped_view_client(profile=profile)
-
-        write_run_report(label)
-        send_slack_notification("✅ [client] Updated data and html files successfully")
-    except Exception as e:
-        write_crash_report(label, e)
-        import traceback
-        traceback.print_exc()
-        send_slack_notification(f"❌ [client] Failed to update data and html files: {type(e).__name__}: {e}")
+    run_job("[client]", run, what="data and html files")
 
 
 if __name__ == "__main__":

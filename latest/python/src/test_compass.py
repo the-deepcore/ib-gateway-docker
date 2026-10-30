@@ -11,14 +11,7 @@ from dateutil import parser
 from dotenv import dotenv_values
 
 
-from mvc_core.observability import (
-    install_stdout_capture,
-    step,
-    record_data_update,
-    write_crash_report,
-    write_run_report,
-    send_slack_notification,
-)
+from mvc_core.observability import record_data_update, run_job, step
 
 
 config = dotenv_values("/tmp/secrets/.env")
@@ -139,8 +132,6 @@ def get_trades(client: httpx.Client):
     return response.json()["market_intelligence_trades"]
 
 
-
-
 def next_weekday(day: Date) -> Date:
     day += timedelta(days=1)
     while day.weekday() >= 5:
@@ -206,12 +197,14 @@ EXIT_NOTHING_NEW = 10
 
 
 def main(retry: bool = False) -> int:
-    install_stdout_capture()
     # Retry runs are tagged in Slack so they're visibly distinguishable from the
     # first attempt. app.py decides whether to schedule a retry (based on this
     # script's exit code) and posts its own notice when it does.
     label = "[compass] (retry)" if retry else "[compass]"
-    try:
+    exit_code = EXIT_FAILED
+
+    def allocate() -> str:
+        nonlocal exit_code
         with httpx.Client(headers=HEADERS) as client:
             with step("list_allocations"):
                 allocations = list_allocations(client, INDEX)
@@ -228,21 +221,14 @@ def main(retry: bool = False) -> int:
                 record_data_update(f"post_latest_trade({posted})")
 
         if posted == RESULT_NO_TRADES:
-            outcome, exit_code = "nothing new", EXIT_NOTHING_NEW
+            note, exit_code = "nothing new", EXIT_NOTHING_NEW
         elif posted == RESULT_ALREADY_COVERED:
-            outcome, exit_code = "already covered", EXIT_POSTED
+            note, exit_code = "already covered", EXIT_POSTED
         else:
-            outcome, exit_code = f"allocation of {posted}", EXIT_POSTED
+            note, exit_code = f"allocation of {posted}", EXIT_POSTED
+        return note
 
-        write_run_report(label)
-        send_slack_notification(f"✅ {label} Updated data successfully ({outcome})")
-        return exit_code
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        write_crash_report(label, e)
-        send_slack_notification(f"❌ {label} Failed to update data: {type(e).__name__}: {e}")
-        return EXIT_FAILED
+    return exit_code if run_job(label, allocate) else EXIT_FAILED
 
 
 if __name__ == "__main__":

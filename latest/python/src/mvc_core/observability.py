@@ -13,10 +13,14 @@ Three building blocks:
     app.py share; prefixes ``[staging]`` on staging. The messages themselves
     stay the short one-liners the channel is used to; the detail lives in the
     S3 report.
+  - ``run_job(label, body, what=...)`` — the wrapper every script's
+    ``main()`` uses: stdout capture, report and Slack message around the
+    job's steps.
 """
 from __future__ import annotations
 
 import contextlib
+from typing import Callable
 import datetime as _dt
 import functools
 import io
@@ -108,6 +112,12 @@ class _TeeStream:
                 _STDOUT_BUFFER.truncate(0)
                 _STDOUT_BUFFER.write(tail)
         return written
+
+    def writelines(self, lines) -> None:
+        # Route through write() so these lines reach the buffer too instead
+        # of going straight to the inner stream via __getattr__.
+        for line in lines:
+            self.write(line)
 
     def flush(self) -> None:
         self.inner.flush()
@@ -327,3 +337,29 @@ def send_slack_notification(message: str) -> None:
         )
     except SlackApiError as exc:
         print(f"[observability] Slack notification failed: {exc}", flush=True)
+
+
+def run_job(label: str, body: Callable[[], str | None], what: str = "data") -> bool:
+    """Run one top-level job the way every script needs it: capture stdout,
+    run ``body``, then write the S3 run / crash report and post the usual
+    one-line Slack message, "✅ [label] Updated <what> successfully" or
+    "❌ [label] Failed to update <what>: <error>". ``body`` may return a note
+    appended in parentheses to the success message (compass's allocation
+    outcome).
+
+    Returns True on success, False if ``body`` raised (already reported, so
+    callers only map it to an exit code)."""
+    install_stdout_capture()
+    try:
+        note = body()
+    except Exception as exc:
+        # The traceback and the crash report read the active exception:
+        # keep them inside except.
+        traceback.print_exc()
+        write_crash_report(label, exc)
+        send_slack_notification(f"❌ {label} Failed to update {what}: {type(exc).__name__}: {exc}")
+        return False
+    write_run_report(label)
+    suffix = f" ({note})" if note else ""
+    send_slack_notification(f"✅ {label} Updated {what} successfully{suffix}")
+    return True
