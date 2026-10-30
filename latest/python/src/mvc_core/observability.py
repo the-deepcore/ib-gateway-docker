@@ -43,6 +43,9 @@ from slack_sdk.errors import SlackApiError
 # reads the live logs. Attached verbatim to the crash report.
 STDOUT_BUFFER_BYTES = 60_000
 
+# Mounted Kubernetes Secret holding the Slack / S3 / DB settings.
+SECRETS_PATH = "/tmp/secrets/.env"
+
 # S3 prefix under the shared bucket where crash + run reports live. The Rails
 # admin page reads from the same prefix.
 S3_REPORTS_PREFIX = "mi_crashes"
@@ -87,7 +90,7 @@ _STDOUT_BUFFER = io.StringIO()
 # Guards the shared buffer only, so concurrent writers (future Flask / threaded
 # callers) can't interleave or race the trim. Terminal passthrough stays
 # outside the lock to avoid serializing stdout.
-_TEE_LOCK = threading.Lock()
+_BUFFER_LOCK = threading.Lock()
 
 
 class _TeeStream:
@@ -102,7 +105,7 @@ class _TeeStream:
         written = self.inner.write(data)
         # Only the shared buffer needs serialization; the terminal passthrough
         # above stays lock-free.
-        with _TEE_LOCK:
+        with _BUFFER_LOCK:
             _STDOUT_BUFFER.write(data)
             # Trim from the head when we grow past 2x the target size, to
             # avoid trimming on every write.
@@ -174,7 +177,11 @@ def _config() -> dict:
     # Memoized: /tmp/secrets/.env is a mounted Kubernetes Secret, immutable
     # for the lifetime of the pod. Reading it on every helper call (env tag,
     # S3 client, bucket, admin URL, env dump) was wasted disk I/O.
-    return dict(dotenv_values("/tmp/secrets/.env"))
+    if not os.path.exists(SECRETS_PATH):
+        # dotenv_values() returns {} for a missing file; say so once here
+        # rather than leave a bare KeyError further down.
+        print(f"[observability] {SECRETS_PATH} not found: no Slack message, no S3 report", flush=True)
+    return dict(dotenv_values(SECRETS_PATH))
 
 
 def _env_tag() -> str:
@@ -229,8 +236,15 @@ def _admin_url(slug: str) -> str | None:
 
 
 def _env_dump() -> str:
+    """Values of SAFE_ENV_KEYS only. The other keys are listed by name, never
+    by value, so a setting missing from the allowlist is still visible in
+    the report without risking a secret."""
     cfg = _config()
-    return "\n".join(f"{k}={cfg.get(k, '')}" for k in SAFE_ENV_KEYS)
+    lines = [f"{k}={cfg.get(k, '')}" for k in SAFE_ENV_KEYS]
+    other_keys = sorted(k for k in cfg if k not in SAFE_ENV_KEYS)
+    if other_keys:
+        lines.append(f"(values withheld: {', '.join(other_keys)})")
+    return "\n".join(lines)
 
 
 def _progress_line() -> str:
@@ -329,6 +343,11 @@ def send_slack_notification(message: str) -> None:
     on staging so its alerts can't be mistaken for production's. Never
     raises: a Slack outage must not fail the job."""
     cfg = _config()
+    missing = [key for key in ("SLACK_TOKEN", "SLACK_CHANNEL", "SLACK_USERNAME") if not cfg.get(key)]
+    if missing:
+        print(f"[observability] Slack notification not sent, {', '.join(missing)} missing "
+              f"from {SECRETS_PATH}: {message}", flush=True)
+        return
     try:
         WebClient(token=cfg["SLACK_TOKEN"]).chat_postMessage(
             channel=cfg["SLACK_CHANNEL"],

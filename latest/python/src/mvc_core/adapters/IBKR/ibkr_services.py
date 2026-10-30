@@ -230,12 +230,14 @@ def fetch_and_upsert(nb_periods: int = 2):
     Connect to IBKR, fetch the last nb_periods days of daily bars for each asset,
     and upsert all retrieved rows into the database.
 
-    Picks a random clientId in [10, 31] on each call. ib_insync rejects a
-    second concurrent connection that shares a clientId, and IB Gateway
-    caps the API slots at 32 by default, so we stay well below. Random
-    (rather than a per-script fixed value) also covers the case where
-    the same script gets fired twice in parallel — which is exactly what
-    we suspect happens at 17:30 with the double trigger.
+    Picks a random clientId in [10, 9999] on each call. IB Gateway rejects
+    a second concurrent connection that shares a clientId (error 326).
+    Random (rather than a per-script fixed value) covers the same script
+    fired twice in parallel, as with the 17:30 double trigger, and the wide
+    range makes two parallel runs pick the same id about once in 10,000.
+    clientId is any integer: the 32-connection cap of IB Gateway limits how
+    many clients connect at once, not the id values. Fixed ids stay below
+    10 (cepea_differential.py and test_connection_ibkr.py use 1).
     """
     config = dotenv_values("/tmp/secrets/.env")
 
@@ -250,7 +252,7 @@ def fetch_and_upsert(nb_periods: int = 2):
         print(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} {message}")
 
     ib.errorEvent += on_ib_error
-    ib.connect(config['IBGATEWAY_HOST'], config['IBGATEWAY_PORT'], clientId=random.randint(10, 31))
+    ib.connect(config['IBGATEWAY_HOST'], config['IBGATEWAY_PORT'], clientId=random.randint(10, 9999))
 
     total_upserted = 0
 

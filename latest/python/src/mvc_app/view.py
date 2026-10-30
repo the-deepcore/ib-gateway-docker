@@ -10,9 +10,10 @@ from mvc_core.plotting.figures import plot_price_equity, plot_price_equity_indic
 
 
 # Public name of each sugar strategy, used as the figure title in place of
-# "OOS — {instrument} ({suffix})". Shared source of truth with
-# test_jobs.py / test_plot_clients.py and kept in sync with
-# MarketIntelligenceService on the Rails side.
+# "OOS — {instrument} ({suffix})". The only copy: test_jobs.py and
+# test_plot_clients.py import it from here. The Rails app does not read
+# these titles; it finds the charts by HTML file name and labels its pages
+# itself.
 SUGAR_STRATEGY_LABELS = {
     "wf_sb11":    "SIGMA",
     "wf_rsi_sb11": "ALPHA",
