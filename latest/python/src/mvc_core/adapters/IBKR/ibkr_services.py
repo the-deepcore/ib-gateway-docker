@@ -240,6 +240,16 @@ def fetch_and_upsert(nb_periods: int = 2):
     config = dotenv_values("/tmp/secrets/.env")
 
     ib = IB()
+
+    # Subscribed before connect() so a clientId clash (326) is caught too.
+    # Printed with a timestamp: the gateway only logs this script's output
+    # once it has exited, under its own exit time.
+    def on_ib_error(reqId, errorCode, errorString, contract):
+        symbol = f", {contract.symbol}" if contract else ""
+        message = f"IB {errorCode} (reqId {reqId}{symbol}): {errorString}"
+        print(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} {message}")
+
+    ib.errorEvent += on_ib_error
     ib.connect(config['IBGATEWAY_HOST'], config['IBGATEWAY_PORT'], clientId=random.randint(10, 31))
 
     total_upserted = 0
