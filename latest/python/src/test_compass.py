@@ -10,8 +10,8 @@ from dateutil import parser
 
 from dotenv import dotenv_values
 
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+
+from mvc_core.observability import record_data_update, run_job, step
 
 
 config = dotenv_values("/tmp/secrets/.env")
@@ -132,23 +132,6 @@ def get_trades(client: httpx.Client):
     return response.json()["market_intelligence_trades"]
 
 
-def send_slack_notification(message: str):
-    # Staging's secret sets S3_PREFIX=staging/ (production has none): tag its
-    # messages so they can't be mistaken for production's.
-    environment = (config.get("S3_PREFIX") or "").strip("/")
-    if environment:
-        message = f"[{environment}] {message}"
-    client = WebClient(token=config['SLACK_TOKEN'])
-    try:
-        response = client.chat_postMessage(
-            channel=config['SLACK_CHANNEL'],
-            text=message,
-            username=config['SLACK_USERNAME']
-        )
-    except SlackApiError as exception:
-        print(exception)
-
-
 def next_weekday(day: Date) -> Date:
     day += timedelta(days=1)
     while day.weekday() >= 5:
@@ -218,30 +201,34 @@ def main(retry: bool = False) -> int:
     # first attempt. app.py decides whether to schedule a retry (based on this
     # script's exit code) and posts its own notice when it does.
     label = "[compass] (retry)" if retry else "[compass]"
-    try:
+    exit_code = EXIT_FAILED
+
+    def allocate() -> str:
+        nonlocal exit_code
         with httpx.Client(headers=HEADERS) as client:
-            # 1. List existing allocations
-            print("=== Listing allocations ===")
-            allocations = list_allocations(client, INDEX)
-            dates = [parse_date(alloc['date']) for alloc in allocations]
+            with step("list_allocations"):
+                allocations = list_allocations(client, INDEX)
+                dates = [parse_date(alloc['date']) for alloc in allocations]
+            with step("get_trades"):
+                trades = get_trades(client)
+            # post_latest_trade may be a no-op (no_trades / already_covered) or
+            # may actually post a new allocation. Only the latter is a data
+            # write, so flag it after the fact instead of marking the step
+            # writes_data=True upfront.
+            with step("post_latest_trade"):
+                posted = post_latest_trade(client, dates, trades)
+            if posted not in (RESULT_NO_TRADES, RESULT_ALREADY_COVERED):
+                record_data_update(f"post_latest_trade({posted})")
 
-            # 2. Create the allocation of the latest trade
-            print("=== Create allocations ===")
-            posted = post_latest_trade(client, dates, get_trades(client))
+        if posted == RESULT_NO_TRADES:
+            note, exit_code = "nothing new", EXIT_NOTHING_NEW
+        elif posted == RESULT_ALREADY_COVERED:
+            note, exit_code = "already covered", EXIT_POSTED
+        else:
+            note, exit_code = f"allocation of {posted}", EXIT_POSTED
+        return note
 
-            if posted == RESULT_NO_TRADES:
-                send_slack_notification(f"✅ {label} Updated data successfully (nothing new)")
-                return EXIT_NOTHING_NEW
-            if posted == RESULT_ALREADY_COVERED:
-                send_slack_notification(f"✅ {label} Updated data successfully (already covered)")
-                return EXIT_POSTED
-            send_slack_notification(f"✅ {label} Updated data successfully (allocation of {posted})")
-            return EXIT_POSTED
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        send_slack_notification(f"❌ {label} Failed to update data: {type(e).__name__}: {e}")
-        return EXIT_FAILED
+    return exit_code if run_job(label, allocate) else EXIT_FAILED
 
 
 if __name__ == "__main__":
