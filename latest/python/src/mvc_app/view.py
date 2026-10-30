@@ -9,11 +9,32 @@ from mvc_core.optimize.oos_reconstruction_services import crop_oos_output
 from mvc_core.plotting.figures import plot_price_equity, plot_price_equity_indicator, plot_price_only
 
 
+# Public name of each sugar strategy, used as the figure title in place of
+# "OOS — {instrument} ({suffix})". Shared source of truth with
+# test_jobs.py / test_plot_clients.py and kept in sync with
+# MarketIntelligenceService on the Rails side.
+SUGAR_STRATEGY_LABELS = {
+    "wf_sb11":    "SIGMA",
+    "wf_rsi_sb11": "ALPHA",
+}
+FUSION_STRATEGY_LABEL = "SIGMA FUSION"
+
+
+def _build_title(instrument: str, title_suffix: str, strategy_label: Optional[str]) -> str:
+    if strategy_label:
+        return strategy_label
+    title = f"OOS — {instrument}"
+    if title_suffix:
+        title += f" ({title_suffix})"
+    return title
+
+
 def build_wf_oos_figure_from_oos(
     *,
     oos: Dict[str, Any],
     instrument: str,
     title_suffix: str = "",
+    strategy_label: Optional[str] = None,
     start_date : Optional[str] = None,
     end_date : Optional[str] = None,
 ) -> Figure:
@@ -43,9 +64,7 @@ def build_wf_oos_figure_from_oos(
     indicator = oos.get("indicator")
     thresholds = oos.get("thresholds")
 
-    title = f"OOS — {instrument}"
-    if title_suffix:
-        title += f" ({title_suffix})"
+    title = _build_title(instrument, title_suffix, strategy_label)
 
     fig = plot_price_equity_indicator(
         price=price,
@@ -64,6 +83,7 @@ def build_wf_oos_figure_from_oos_no_indicator(
     oos: Dict[str, Any],
     instrument: str,
     title_suffix: str = "",
+    strategy_label: Optional[str] = None,
     start_date : Optional[str] = None,
     end_date : Optional[str] = None,
 ) -> Figure:
@@ -92,9 +112,7 @@ def build_wf_oos_figure_from_oos_no_indicator(
     equity_df: pd.DataFrame = oos["equity_oos_df"]
     decisions = oos.get("decisions")
 
-    title = f"OOS — {instrument}"
-    if title_suffix:
-        title += f" ({title_suffix})"
+    title = _build_title(instrument, title_suffix, strategy_label)
 
     fig = plot_price_equity(
         price=price,
@@ -111,6 +129,7 @@ def build_wf_oos_figure_price_only(
     oos: Dict[str, Any],
     instrument: str,
     title_suffix: str = "",
+    strategy_label: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> Figure:
@@ -139,9 +158,7 @@ def build_wf_oos_figure_price_only(
     price = oos["price"]
     decisions = oos.get("decisions")
 
-    title = f"OOS — {instrument}"
-    if title_suffix:
-        title += f" ({title_suffix})"
+    title = _build_title(instrument, title_suffix, strategy_label)
 
     fig = plot_price_only(
         price=price,
@@ -238,7 +255,7 @@ def build_fusion_figure(start_date: Optional[str] = None):
         equity=fusion["equity"],
         instrument=FUSION_INSTRUMENT,
         decisions=fusion["decisions"],
-        title="Fusion Strategy",
+        title=FUSION_STRATEGY_LABEL,
         equity_name="Fusion",
     )
 
@@ -253,7 +270,7 @@ def build_fusion_client_figure(start_date: Optional[str] = None):
         price=fusion["price"],
         instrument=FUSION_INSTRUMENT,
         decisions=fusion["decisions"],
-        title="Fusion Strategy",
+        title=FUSION_STRATEGY_LABEL,
     )
 
 

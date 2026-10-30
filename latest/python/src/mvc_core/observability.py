@@ -1,0 +1,329 @@
+"""Observability helpers shared by the top-level job scripts.
+
+Three building blocks:
+
+  - ``step(name, writes_data=...)`` — a context manager wrapped around every
+    top-level operation in ``main()``. It logs start/end/duration and tracks
+    which steps completed and which ones wrote user-facing data.
+  - ``write_crash_report`` / ``write_run_report`` — persist a text blob to
+    S3 under ``mi_crashes/<slug>.txt`` so the full stdout tail + stack +
+    environment survives a pod reload (the AKS cluster has no Container
+    Insights, so stdout alone is lost once the pod goes).
+  - ``send_slack_notification`` — the one Slack poster every script and
+    app.py share; prefixes ``[staging]`` on staging. The messages themselves
+    stay the short one-liners the channel is used to; the detail lives in the
+    S3 report.
+"""
+from __future__ import annotations
+
+import contextlib
+import datetime as _dt
+import functools
+import io
+import os
+import socket
+import sys
+import threading
+import time
+import traceback
+
+from dotenv import dotenv_values
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+
+# boto3 is heavy: import it lazily inside _s3_client so this module can be
+# imported for unit tests on a machine where it is not installed.
+
+
+# Tail of stdout we keep in memory in case the pod is reloaded before anyone
+# reads the live logs. Attached verbatim to the crash report.
+STDOUT_BUFFER_BYTES = 60_000
+
+# S3 prefix under the shared bucket where crash + run reports live. The Rails
+# admin page reads from the same prefix.
+S3_REPORTS_PREFIX = "mi_crashes"
+
+# Only these keys from /tmp/secrets/.env end up in a crash report. Everything
+# else is treated as a secret.
+SAFE_ENV_KEYS = (
+    "POSTGRES_HOST",
+    "POSTGRES_PORT",
+    "POSTGRES_DATABASE",
+    "S3_PREFIX",
+    "SLACK_CHANNEL",
+    "SLACK_USERNAME",
+    "COMPASS_URL",
+    "COMPASS_INDEX",
+    "THEDEEPCORE_URL",
+    "AWS_REGION",
+    "AWS_BUCKET",
+    "ADMIN_LOGS_BASE_URL",
+)
+
+
+class _RunState:
+    """Per-process accumulator for everything the Slack / report formatters
+    need to describe the run so far."""
+
+    def __init__(self) -> None:
+        # (name, elapsed_s) for every step that completed without raising.
+        self.steps_ok: list[tuple[str, float]] = []
+        # Names of completed steps marked writes_data=True, in order.
+        self.data_updates: list[str] = []
+        # The step currently running (set by the context manager on entry,
+        # left in place after a failure so the formatter can report it).
+        self.current_step: str | None = None
+        self.started_at = time.monotonic()
+
+
+# Each ``os.system('python3 /app/src/test_*.py')`` call from app.py spawns
+# a fresh interpreter, so this module-level state only ever covers one run.
+_RUN_STATE = _RunState()
+_STDOUT_BUFFER = io.StringIO()
+# Guards the shared buffer only, so concurrent writers (future Flask / threaded
+# callers) can't interleave or race the trim. Terminal passthrough stays
+# outside the lock to avoid serializing stdout.
+_TEE_LOCK = threading.Lock()
+
+
+class _TeeStream:
+    """File-like wrapper that writes to the real stream AND keeps a bounded
+    tail in memory. We attach the tail verbatim to the crash report so a
+    pod reload no longer eats the diagnostic context."""
+
+    def __init__(self, inner):
+        self.inner = inner
+
+    def write(self, data: str) -> int:
+        written = self.inner.write(data)
+        # Only the shared buffer needs serialization; the terminal passthrough
+        # above stays lock-free.
+        with _TEE_LOCK:
+            _STDOUT_BUFFER.write(data)
+            # Trim from the head when we grow past 2x the target size, to
+            # avoid trimming on every write.
+            if _STDOUT_BUFFER.tell() > STDOUT_BUFFER_BYTES * 2:
+                tail = _STDOUT_BUFFER.getvalue()[-STDOUT_BUFFER_BYTES:]
+                _STDOUT_BUFFER.seek(0)
+                _STDOUT_BUFFER.truncate(0)
+                _STDOUT_BUFFER.write(tail)
+        return written
+
+    def flush(self) -> None:
+        self.inner.flush()
+
+    def __getattr__(self, name):
+        # Delegate everything else (fileno, isatty, ...) to the underlying
+        # stream so libraries that introspect sys.stdout still work.
+        return getattr(self.inner, name)
+
+
+def install_stdout_capture() -> None:
+    """Pipe stdout + stderr through the tee buffer. Call this at the top of
+    each top-level script's ``main()``, before anything else prints."""
+    if not isinstance(sys.stdout, _TeeStream):
+        sys.stdout = _TeeStream(sys.stdout)
+    if not isinstance(sys.stderr, _TeeStream):
+        sys.stderr = _TeeStream(sys.stderr)
+
+
+@contextlib.contextmanager
+def step(name: str, *, writes_data: bool = False):
+    """Wrap a top-level operation. Logs start / duration, records completion
+    into ``_RUN_STATE``, and leaves ``current_step`` on failure so the Slack
+    message can name it. ``writes_data=True`` marks steps whose completion
+    means user-facing artefacts (DB rows, S3 files, Compass allocations)
+    have been published; drives the ``Impact`` line."""
+    _RUN_STATE.current_step = name
+    started = time.monotonic()
+    print(f"[step={name}] start", flush=True)
+    try:
+        yield
+    except Exception:
+        elapsed = time.monotonic() - started
+        print(f"[step={name}] FAILED in {elapsed:.2f}s", flush=True)
+        raise
+    else:
+        elapsed = time.monotonic() - started
+        _RUN_STATE.steps_ok.append((name, elapsed))
+        if writes_data:
+            _RUN_STATE.data_updates.append(name)
+        print(f"[step={name}] done in {elapsed:.2f}s", flush=True)
+
+
+def record_data_update(name: str) -> None:
+    """Append to the ``data_updates`` tally after the fact. For callers that
+    can only decide whether a step actually published something based on its
+    return value (e.g. compass's post_latest_trade distinguishes a real new
+    allocation from "already covered" / "nothing new")."""
+    _RUN_STATE.data_updates.append(name)
+
+
+@functools.lru_cache(maxsize=1)
+def _config() -> dict:
+    # Memoized: /tmp/secrets/.env is a mounted Kubernetes Secret, immutable
+    # for the lifetime of the pod. Reading it on every helper call (env tag,
+    # S3 client, bucket, admin URL, env dump) was wasted disk I/O.
+    return dict(dotenv_values("/tmp/secrets/.env"))
+
+
+def _env_tag() -> str:
+    """``[staging] `` on staging (from ``S3_PREFIX``), empty on production."""
+    env = (_config().get("S3_PREFIX") or "").strip("/")
+    return f"[{env}] " if env else ""
+
+
+@functools.lru_cache(maxsize=1)
+def _s3_client():
+    # Memoized: boto3 clients hold their own connection pool, no reason to
+    # rebuild one per report.
+    import boto3
+    cfg = _config()
+    return boto3.client(
+        "s3",
+        region_name=cfg.get("AWS_REGION") or os.environ.get("AWS_REGION", "eu-west-3"),
+        aws_access_key_id=cfg.get("S3_ACCESS_KEY") or os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=cfg.get("S3_SECRET_KEY") or os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+
+
+def _bucket() -> str:
+    cfg = _config()
+    return cfg.get("AWS_BUCKET") or cfg.get("S3_BUCKET") or "thedeepcore"
+
+
+def _slug(label: str, status: str, when: _dt.datetime) -> str:
+    """URL-safe slug used as both the S3 key stem and the admin route id.
+
+    Encodes the status (``ok`` / ``failed``) so the admin index can render
+    it from the key listing alone, without fetching every object.
+
+    Example: ``2026-10-29T16-00-15Z-client-failed``.
+    """
+    stem = when.strftime("%Y-%m-%dT%H-%M-%SZ")
+    clean_label = "".join(c for c in label if c.isalnum() or c in ("-", "_")).strip("-_")
+    status_slug = status.lower()
+    parts = [stem]
+    if clean_label:
+        parts.append(clean_label)
+    parts.append(status_slug)
+    return "-".join(parts)
+
+
+def _admin_url(slug: str) -> str | None:
+    cfg = _config()
+    base = cfg.get("ADMIN_LOGS_BASE_URL") or os.environ.get("ADMIN_LOGS_BASE_URL")
+    if not base:
+        return None
+    return f"{base.rstrip('/')}/{slug}"
+
+
+def _env_dump() -> str:
+    cfg = _config()
+    return "\n".join(f"{k}={cfg.get(k, '')}" for k in SAFE_ENV_KEYS)
+
+
+def _progress_line() -> str:
+    """Human-readable summary of what was published before the crash.
+    Used verbatim in the Slack ``Impact`` field and in the report body."""
+    data_updates = _RUN_STATE.data_updates
+    if not data_updates:
+        return "AUCUNE donnée publiée. Utilisateurs voient l'ancien contenu S3."
+    return f"{len(data_updates)} étape(s) data OK avant crash : {', '.join(data_updates)}."
+
+
+def _put_report(slug: str, body: str) -> bool:
+    """Write ``body`` to ``s3://<bucket>/<prefix>/<slug>.txt``. Never raises:
+    an upload failure must not add noise on top of the real problem."""
+    key = f"{S3_REPORTS_PREFIX}/{slug}.txt"
+    try:
+        _s3_client().put_object(
+            Bucket=_bucket(),
+            Key=key,
+            Body=body.encode("utf-8"),
+            ContentType="text/plain; charset=utf-8",
+        )
+        return True
+    except Exception as exc:
+        # Never let the report upload failure mask the real problem.
+        print(f"[observability] report upload failed: {exc}", flush=True)
+        return False
+
+
+def _report_body(*, status: str, label: str, exception: BaseException | None) -> str:
+    now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+    elapsed = time.monotonic() - _RUN_STATE.started_at
+    steps = ", ".join(f"{name}({elapsed:.2f}s)" for name, elapsed in _RUN_STATE.steps_ok) or "(none)"
+
+    sections = [
+        "# Report",
+        f"status          : {status}",
+        f"label           : {label}",
+        f"timestamp_utc   : {now}",
+        f"pod_hostname    : {socket.gethostname()}",
+        f"run_elapsed_s   : {elapsed:.2f}",
+    ]
+
+    if exception is not None:
+        sections.extend([
+            f"current_step    : {_RUN_STATE.current_step or '(none)'}",
+            f"exception       : {type(exception).__name__}: {exception}",
+        ])
+
+    sections.extend([
+        "",
+        "# Progress",
+        _progress_line(),
+        f"All steps OK    : {steps}",
+        "",
+        "# Env (non-secret keys)",
+        _env_dump(),
+        "",
+        f"# Last ~{STDOUT_BUFFER_BYTES} bytes of stdout",
+        _STDOUT_BUFFER.getvalue().rstrip() or "(empty)",
+    ])
+
+    if exception is not None:
+        sections.extend([
+            "",
+            "# Full traceback",
+            traceback.format_exc().rstrip(),
+        ])
+
+    return "\n".join(sections) + "\n"
+
+
+def write_crash_report(label: str, exception: BaseException) -> tuple[str, str | None]:
+    """Write the failure report to S3 and return (slug, admin_url)."""
+    now = _dt.datetime.now(_dt.timezone.utc)
+    slug = _slug(label, "failed", now)
+    body = _report_body(status="FAILED", label=label, exception=exception)
+    if not _put_report(slug, body):
+        return slug, None
+    return slug, _admin_url(slug)
+
+
+def write_run_report(label: str) -> tuple[str, str | None]:
+    """Write the success report to S3 and return (slug, admin_url). Called
+    on every ✅ so the admin page has a full history, not just the crashes."""
+    now = _dt.datetime.now(_dt.timezone.utc)
+    slug = _slug(label, "ok", now)
+    body = _report_body(status="OK", label=label, exception=None)
+    if not _put_report(slug, body):
+        return slug, None
+    return slug, _admin_url(slug)
+
+
+def send_slack_notification(message: str) -> None:
+    """Post ``message`` to the configured Slack channel, tagged ``[staging]``
+    on staging so its alerts can't be mistaken for production's. Never
+    raises: a Slack outage must not fail the job."""
+    cfg = _config()
+    try:
+        WebClient(token=cfg["SLACK_TOKEN"]).chat_postMessage(
+            channel=cfg["SLACK_CHANNEL"],
+            text=f"{_env_tag()}{message}",
+            username=cfg["SLACK_USERNAME"],
+        )
+    except SlackApiError as exc:
+        print(f"[observability] Slack notification failed: {exc}", flush=True)

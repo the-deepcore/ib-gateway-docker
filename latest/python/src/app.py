@@ -1,13 +1,13 @@
 from flask import Flask, Response, request
 from dotenv import dotenv_values
 from datetime import date
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 import hmac
 import json
 import subprocess
 import threading
 import logging
+
+from mvc_core.observability import send_slack_notification
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -24,19 +24,6 @@ config = dotenv_values("/tmp/secrets/.env")
 # Hard cap so a hung child (slow TLS handshake, socket in CLOSE_WAIT)
 # cannot block the Flask thread forever.
 SUBPROCESS_TIMEOUT = int(config.get('SUBPROCESS_TIMEOUT', '300'))
-
-
-def send_slack_notification(message):
-    env_tag = (config.get('S3_PREFIX') or '').strip('/')
-    prefix = f"[{env_tag}] " if env_tag else ""
-    try:
-        WebClient(token=config['SLACK_TOKEN']).chat_postMessage(
-            channel=config['SLACK_CHANNEL'],
-            text=f"{prefix}{message}",
-            username=config['SLACK_USERNAME']
-        )
-    except SlackApiError as exc:
-        logger.error("Slack notification failed: %s", exc)
 
 
 def run_script(script, *args):
