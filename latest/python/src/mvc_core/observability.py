@@ -9,13 +9,14 @@ Three building blocks:
     S3 under ``mi_crashes/<slug>.txt`` so the full stdout tail + stack +
     environment survives a pod reload (the AKS cluster has no Container
     Insights, so stdout alone is lost once the pod goes).
+  - ``format_failure_message`` / ``format_success_message`` — Slack text
+    readable at a glance: a one-line header, the step we failed on, an
+    ``Impact`` line that says whether the data was updated before the crash
+    or not, a link to the full report, and the traceback tail.
   - ``send_slack_notification`` — the one Slack poster every script and
-    app.py share; prefixes ``[staging]`` on staging. The messages themselves
-    stay the short one-liners the channel is used to; the detail lives in the
-    S3 report.
-  - ``run_job(label, body, what=...)`` — the wrapper every script's
-    ``main()`` uses: stdout capture, report and Slack message around the
-    job's steps.
+    app.py share; prefixes ``[staging]`` on staging.
+  - ``run_job(label, body)`` — the wrapper every script's ``main()`` uses:
+    stdout capture, report and Slack message around the job's steps.
 """
 from __future__ import annotations
 
@@ -38,6 +39,10 @@ from slack_sdk.errors import SlackApiError
 # boto3 is heavy: import it lazily inside _s3_client so this module can be
 # imported for unit tests on a machine where it is not installed.
 
+
+# Slack's text field accepts up to 40k chars; this leaves plenty of room for
+# the actual stack frames while staying well inside the limit.
+TRACEBACK_SLACK_LIMIT = 3500
 
 # Tail of stdout we keep in memory in case the pod is reloaded before anyone
 # reads the live logs. Attached verbatim to the crash report.
@@ -342,6 +347,55 @@ def write_run_report(label: str) -> tuple[str, str | None]:
     return slug, _admin_url(slug)
 
 
+def _format_header(icon: str, label: str) -> str:
+    # No [staging] tag here: send_slack_notification adds it.
+    now = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return f"{icon} {label} @ {now}"
+
+
+def format_failure_message(label: str, exception: BaseException,
+                           admin_url: str | None = None) -> str:
+    """Rich Slack text for a top-level script failure, built to read at a
+    glance in a crowded channel."""
+    tb = traceback.format_exc()
+    print(tb, flush=True)
+
+    elapsed = time.monotonic() - _RUN_STATE.started_at
+    lines = [
+        _format_header("🔴", f"{label} FAILED"),
+        f"Step   : {_RUN_STATE.current_step or '(unknown)'}",
+        f"Elapsed: {elapsed:.1f}s",
+        f"Pod    : {socket.gethostname()}",
+        f"Error  : {type(exception).__name__}: {exception}",
+        f"Impact : {_progress_line()}",
+    ]
+    if admin_url:
+        lines.append(f"Détail : {admin_url}")
+    lines.append(f"```\n{tb[-TRACEBACK_SLACK_LIMIT:]}\n```")
+    return "\n".join(lines)
+
+
+def format_success_message(label: str, note: str | None = None,
+                           admin_url: str | None = None) -> str:
+    """Rich Slack text for a successful run. ``note`` is a one-line summary
+    the caller wants on top of the Published / No-data line (compass uses it
+    for "already covered" / "nothing new")."""
+    elapsed = time.monotonic() - _RUN_STATE.started_at
+    lines = [_format_header("🟢", f"{label} OK — in {elapsed:.0f}s")]
+    if note:
+        lines.append(note)
+    data_updates = _RUN_STATE.data_updates
+    if data_updates:
+        lines.append(f"Published {len(data_updates)}: {', '.join(data_updates)}.")
+    elif not note:
+        # Only state the no-op when we don't already have a note explaining
+        # the outcome; otherwise it reads as redundant.
+        lines.append("No data-writing step ran.")
+    if admin_url:
+        lines.append(f"Détail : {admin_url}")
+    return "\n".join(lines)
+
+
 def send_slack_notification(message: str) -> None:
     """Post ``message`` to the configured Slack channel, tagged ``[staging]``
     on staging so its alerts can't be mistaken for production's. Never
@@ -362,13 +416,11 @@ def send_slack_notification(message: str) -> None:
         print(f"[observability] Slack notification failed: {exc}", flush=True)
 
 
-def run_job(label: str, body: Callable[[], str | None], what: str = "data") -> bool:
+def run_job(label: str, body: Callable[[], str | None]) -> bool:
     """Run one top-level job the way every script needs it: capture stdout,
-    run ``body``, then write the S3 run / crash report and post the usual
-    one-line Slack message, "✅ [label] Updated <what> successfully" or
-    "❌ [label] Failed to update <what>: <error>". ``body`` may return a note
-    appended in parentheses to the success message (compass's allocation
-    outcome).
+    run ``body``, then write the S3 run / crash report and post the matching
+    Slack message. ``body`` may return a one-line note for the success
+    message (compass uses it for the allocation outcome).
 
     Returns True on success, False if ``body`` raised (already reported, so
     callers only map it to an exit code)."""
@@ -376,13 +428,10 @@ def run_job(label: str, body: Callable[[], str | None], what: str = "data") -> b
     try:
         note = body()
     except Exception as exc:
-        # The traceback and the crash report read the active exception:
-        # keep them inside except.
-        traceback.print_exc()
-        write_crash_report(label, exc)
-        send_slack_notification(f"❌ {label} Failed to update {what}: {type(exc).__name__}: {exc}")
+        # Both helpers read the active traceback: keep them inside except.
+        _, admin_url = write_crash_report(label, exc)
+        send_slack_notification(format_failure_message(label, exc, admin_url=admin_url))
         return False
-    write_run_report(label)
-    suffix = f" ({note})" if note else ""
-    send_slack_notification(f"✅ {label} Updated {what} successfully{suffix}")
+    _, admin_url = write_run_report(label)
+    send_slack_notification(format_success_message(label, note=note, admin_url=admin_url))
     return True

@@ -221,11 +221,11 @@ def main(retry: bool = False) -> int:
                 record_data_update(f"post_latest_trade({posted})")
 
         if posted == RESULT_NO_TRADES:
-            note, exit_code = "nothing new", EXIT_NOTHING_NEW
+            note, exit_code = "Nothing new to allocate.", EXIT_NOTHING_NEW
         elif posted == RESULT_ALREADY_COVERED:
-            note, exit_code = "already covered", EXIT_POSTED
+            note, exit_code = "Latest trade already covered by an existing allocation.", EXIT_POSTED
         else:
-            note, exit_code = f"allocation of {posted}", EXIT_POSTED
+            note, exit_code = f"Posted allocation for {posted}.", EXIT_POSTED
         return note
 
     return exit_code if run_job(label, allocate) else EXIT_FAILED
