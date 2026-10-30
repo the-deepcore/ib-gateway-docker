@@ -204,8 +204,10 @@ def _s3_client():
     return boto3.client(
         "s3",
         region_name=cfg.get("AWS_REGION") or os.environ.get("AWS_REGION", "eu-west-3"),
-        aws_access_key_id=cfg.get("S3_ACCESS_KEY") or os.environ.get("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=cfg.get("S3_SECRET_KEY") or os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        # Same keys as s3_services: the secret has no S3_ACCESS_KEY /
+        # S3_SECRET_KEY, and they are not in the process environment either.
+        aws_access_key_id=cfg.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=cfg.get("AWS_SECRET_ACCESS_KEY") or os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )
 
 
@@ -262,9 +264,12 @@ def _progress_line() -> str:
 
 
 def _put_report(slug: str, body: str) -> bool:
-    """Write ``body`` to ``s3://<bucket>/<prefix>/<slug>.txt``. Never raises:
-    an upload failure must not add noise on top of the real problem."""
-    key = f"{S3_REPORTS_PREFIX}/{slug}.txt"
+    """Write ``body`` to ``s3://<bucket>/[S3_PREFIX]<prefix>/<slug>.txt``.
+    Never raises: an upload failure must not add noise on top of the real
+    problem."""
+    # S3_PREFIX (staging/ on staging, unset in production) keeps staging's
+    # reports out of production's folder, like every key s3_services writes.
+    key = f"{_config().get('S3_PREFIX') or ''}{S3_REPORTS_PREFIX}/{slug}.txt"
     try:
         _s3_client().put_object(
             Bucket=_bucket(),
