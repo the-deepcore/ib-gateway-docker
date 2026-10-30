@@ -278,6 +278,10 @@ def _report_body(*, status: str, label: str, exception: BaseException | None) ->
     now = _dt.datetime.now(_dt.timezone.utc).isoformat()
     elapsed = time.monotonic() - _RUN_STATE.started_at
     steps = ", ".join(f"{name}({elapsed:.2f}s)" for name, elapsed in _RUN_STATE.steps_ok) or "(none)"
+    # Same lock as _TeeStream.write, so a concurrent write or trim can't
+    # hand us a half-trimmed buffer.
+    with _BUFFER_LOCK:
+        stdout_tail = _STDOUT_BUFFER.getvalue().rstrip()
 
     sections = [
         "# Report",
@@ -304,7 +308,7 @@ def _report_body(*, status: str, label: str, exception: BaseException | None) ->
         _env_dump(),
         "",
         f"# Last ~{STDOUT_BUFFER_BYTES} bytes of stdout",
-        _STDOUT_BUFFER.getvalue().rstrip() or "(empty)",
+        stdout_tail or "(empty)",
     ])
 
     if exception is not None:
