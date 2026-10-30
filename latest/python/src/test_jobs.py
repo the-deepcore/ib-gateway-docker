@@ -158,7 +158,7 @@ def run():
 
 
 def main():
-    run_job("[admin]", run, what="data and html files")
+    run_job("[admin]", run)
 
 
 if __name__ == "__main__":

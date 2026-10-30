@@ -107,7 +107,7 @@ def run():
 
 
 def main():
-    run_job("[client]", run, what="data and html files")
+    run_job("[client]", run)
 
 
 if __name__ == "__main__":
