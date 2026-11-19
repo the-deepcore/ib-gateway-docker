@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from matplotlib.figure import Figure
+import numpy as np
 import pandas as pd
 
 from mvc_core.optimize.oos_reconstruction_services import crop_oos_output
@@ -212,12 +213,32 @@ def export_profile_trades_csv(profile_name: str, output_path: str) -> None:
 FUSION_INSTRUMENT = "SB11"
 FUSION_INITIAL_INV = 200_000_000
 FUSION_POSITION_NOTIONAL = 200_000_000
+FUSION_VOTES_NAME = "Votes"
+
+
+def fusion_votes(result: Dict[str, Any]) -> pd.Series:
+    """
+    Aggregated vote of the six strategies per date, as the engine counts it in
+    combine_mode="majority": the sum of sign(signal) * weight of each strategy.
+    From -6.01 (all short) to +6.01 (all long); above 0 the majority is long,
+    below 0 short (the 1.01 weight of the RSI breaks the ties). Dates where a
+    strategy has no signal yet (warmup) are left out, like the engine does with
+    date_mode="intersection".
+    """
+    detail = result["strategy_detail"]
+    votes = pd.concat(
+        [np.sign(d["signal"]) * d["weight"] for d in detail.values()], axis=1
+    ).sort_index()
+    total = votes.sum(axis=1, min_count=votes.shape[1]).dropna()
+    total.index = pd.DatetimeIndex(total.index)
+    return total.rename(FUSION_VOTES_NAME)
 
 
 def _run_fusion(start_date: Optional[str] = None) -> Dict[str, Any]:
     """
-    Prix, equity (Fusion, Buy&Hold) et entrées de la stratégie Fusion,
-    recadrés à partir de start_date (equity rebasée sur l'investissement initial).
+    Prix, equity (Fusion, Buy&Hold), entrées et votes agrégés (fusion_votes)
+    de la stratégie Fusion, recadrés à partir de start_date (equity rebasée sur
+    l'investissement initial).
     """
     from mvc_app.fusion.fusion_services import run_fusion
 
@@ -227,9 +248,12 @@ def _run_fusion(start_date: Optional[str] = None) -> Dict[str, Any]:
     open_trades = pd.DataFrame(result["combined_open_positions"], columns=trades.columns)
     entries = pd.concat([trades, open_trades], ignore_index=True)[["entry_date", "direction", "entry_price"]]
 
+    votes = fusion_votes(result)
+
     if start_date is not None:
         bt = bt.loc[start_date:]
         entries = entries[entries["entry_date"] >= pd.Timestamp(start_date)]
+        votes = votes.loc[start_date:]
 
     price = bt["Close"]
     pnl = bt["Equity_Fixed_Notional"] - bt["Equity_Fixed_Notional"].iloc[0]
@@ -242,19 +266,23 @@ def _run_fusion(start_date: Optional[str] = None) -> Dict[str, Any]:
         "action": entries["direction"].map({"Long": "OPEN_LONG", "Short": "OPEN_SHORT"}),
         "price": entries["entry_price"],
     }).sort_values("date").reset_index(drop=True)
-    return {"price": price, "equity": equity, "decisions": decisions}
+    return {"price": price, "equity": equity, "decisions": decisions, "votes": votes}
 
 
 def build_fusion_figure(start_date: Optional[str] = None):
     """
-    Graphique prix + equity de la stratégie Fusion, recadré à partir de
-    start_date (equity rebasée sur l'investissement initial).
+    Graphique de la stratégie Fusion, comme ceux de SIGMA et ALPHA : prix et
+    entrées, "Model Visualization" (votes agrégés des six stratégies, seuil 0 =
+    majorité), equity vs Buy&Hold. Recadré à partir de start_date (equity
+    rebasée sur l'investissement initial).
     """
     fusion = _run_fusion(start_date=start_date)
-    return plot_price_equity(
+    return plot_price_equity_indicator(
         price=fusion["price"],
         equity=fusion["equity"],
         instrument=FUSION_INSTRUMENT,
+        indicator={FUSION_VOTES_NAME: fusion["votes"]},
+        thresholds=0.0,
         decisions=fusion["decisions"],
         title=FUSION_STRATEGY_LABEL,
         equity_name="Fusion",
