@@ -11,6 +11,7 @@ futures étant choisi via un calendrier fixe (voir CONTRACT_CALENDARS).
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Optional, Union
@@ -93,6 +94,17 @@ class FuturesContract:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def _client_id(client_id: Optional[int]) -> int:
+    """
+    clientId IBKR : celui passé, sinon un id aléatoire dans [10, 9999].
+    IB Gateway refuse une seconde connexion simultanée avec le même clientId
+    (erreur 326) : avec un id fixe (1), deux appels /cepea_differential en
+    parallèle faisaient échouer le second (vu en prod le 2026-11-19).
+    Même plage que ibkr_services.fetch_and_upsert.
+    """
+    return client_id if client_id is not None else random.randint(10, 9999)
+
+
 def _normalize_coffee_type(coffee_type: str) -> str:
     ct = coffee_type.strip().lower()
     aliases = {"kc": "arabica", "rc": "robusta", "rm": "robusta", "d": "robusta"}
@@ -163,7 +175,7 @@ def compute_differential(d: DateLike, coffee_type: str, price: float, futures_cl
 # Récupération du close futures via IBKR
 # ---------------------------------------------------------------------------
 def fetch_futures_close(contract: FuturesContract, d: DateLike, ib: Optional[IB] = None,
-                        host: str = "127.0.0.1", port: int = 4002, client_id: int = 1,
+                        host: str = "127.0.0.1", port: int = 4002, client_id: Optional[int] = None,
                         lookback_days: int = 10) -> tuple[date, float]:
     """
     Close du contrat à la date `d`. Si aucune barre n'existe ce jour-là (week-end,
@@ -175,7 +187,7 @@ def fetch_futures_close(contract: FuturesContract, d: DateLike, ib: Optional[IB]
     own_connection = ib is None
     if own_connection:
         ib = IB()
-        ib.connect(host, port, clientId=client_id)
+        ib.connect(host, port, clientId=_client_id(client_id))
     try:
         fut = Future(symbol=spec["symbol"], lastTradeDateOrContractMonth=contract.contract_month,
                      exchange=spec["exchange"], includeExpired=True)
@@ -209,7 +221,7 @@ def fetch_futures_close(contract: FuturesContract, d: DateLike, ib: Optional[IB]
 
 def compute_differential_ibkr(d: DateLike, coffee_type: str, price: float,
                               ib: Optional[IB] = None, host: str = "127.0.0.1",
-                              port: int = 4002, client_id: int = 1) -> dict:
+                              port: int = 4002, client_id: Optional[int] = None) -> dict:
     """
     Comme `compute_differential`, mais va chercher lui-même le close du contrat
     associé à la date via IBKR. `ib` peut être passé pour réutiliser une connexion
@@ -225,10 +237,10 @@ def compute_differential_ibkr(d: DateLike, coffee_type: str, price: float,
 
 def compute_daily_differentials(d: DateLike, arabica_price: float, robusta_price: float,
                                 host: str = "127.0.0.1", port: int = 4002,
-                                client_id: int = 1) -> pd.DataFrame:
+                                client_id: Optional[int] = None) -> pd.DataFrame:
     """Point d'entrée quotidien : les deux différentiels du jour en une seule connexion IBKR."""
     ib = IB()
-    ib.connect(host, port, clientId=client_id)
+    ib.connect(host, port, clientId=_client_id(client_id))
     try:
         rows = [
             compute_differential_ibkr(d, "arabica", arabica_price, ib=ib),

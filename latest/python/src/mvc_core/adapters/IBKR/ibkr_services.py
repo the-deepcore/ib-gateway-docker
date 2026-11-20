@@ -237,7 +237,7 @@ def fetch_and_upsert(nb_periods: int = 2):
     range makes two parallel runs pick the same id about once in 10,000.
     clientId is any integer: the 32-connection cap of IB Gateway limits how
     many clients connect at once, not the id values. Fixed ids stay below
-    10 (cepea_differential.py and test_connection_ibkr.py use 1).
+    10 (test_connection_ibkr.py uses 1).
     """
     config = dotenv_values("/tmp/secrets/.env")
 
